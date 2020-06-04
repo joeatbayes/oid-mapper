@@ -1,0 +1,41 @@
+Documenation 
+
+When running on windows ensure the Postgress main directory 
+  and postgres\bin is added to system path.   
+
+When opening a new command prompt run the file pg_env.bat 
+  on my system that is located at c:\PostgresSQL12\pg_env.bat
+
+
+psql - tutorial and cheat sheet - https://tomcam.github.io/postgres/
+PSQL reference - https://www.postgresql.org/docs/12/app-psql.html
+main postgress reference - https://www.postgresql.org/docs/9.3/index.html
+Turn query timing on with \timing https://www.postgresqltutorial.com/psql-commands/
+How to insert data as quickly as possible -https://www.depesz.com/2007/07/05/how-to-insert-data-to-database-as-fast-as-possible/
+Posgress tuning tool - Critical to set for larger machines with lots of RAM and lots of cores. https://pgtune.leopard.in.ua/#/
+postgress data types - https://www.postgresqltutorial.com/postgresql-data-types/
+postgress SQL insert - https://www.postgresqltutorial.com/postgresql-insert/
+postgress SQL select - https://www.postgresqltutorial.com/postgresql-select/
+SQL select distinct https://www.postgresqltutorial.com/postgresql-select-distinct/
+SQL Create index - https://www.postgresql.org/docs/9.1/sql-createindex.html
+postgress query tuning - https://www.geekytidbits.com/performance-tuning-postgres/
+Return a result from stored procedure http://sqlines.com/postgresql/how-to/return_result_set_from_stored_procedure
+Get current time - https://www.postgresqltutorial.com/postgresql-current_time/
+Elaspsed time between two timestamps https://stackoverflow.com/questions/13866850/sql-server-calculate-elapsed-time-between-two-datetime-stamps-in-hhmmss-form
+Save psql output to a file - https://stackoverflow.com/questions/5331320/psql-save-results-of-command-to-a-file
+postgres case statement - https://www.postgresqltutorial.com/postgresql-case/
+Change working memory in postgres https://www.citusdata.com/blog/2018/06/12/configuring-work-mem-on-postgres/
+
+
+Stored Procs
+  how to create and invoke stored proc - https://www.enterprisedb.com/postgres-tutorials/stored-procedures-postgresql-how-create-stored-procedure-and-invoke-it
+  Everything you need to know about stored proc and functions - https://www.enterprisedb.com/postgres-tutorials/everything-you-need-know-about-postgres-stored-procedures-and-functions
+  
+
+Application programming interfaces for Python, JDBC, https://www.postgresqltutorial.com/postgresql-application-programming-interfaces/
+
+
+Run SQL commands in file from inside of psql - https://kb.objectrocket.com/postgresql/how-to-run-an-sql-file-in-postgres-846
+How to set default user password in postgress - https://chartio.com/resources/tutorials/how-to-set-the-default-user-password-in-postgresql/
+
+golang example connecting to postgress - https://golangdocs.com/golang-postgresql-example
