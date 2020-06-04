@@ -145,3 +145,6 @@ go/src/*
 go/pkg
 go/pkg/*
 *.exe
+t.t2
+t.t3
+t.t4

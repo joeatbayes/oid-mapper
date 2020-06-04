@@ -165,3 +165,39 @@ file.
   # 0.05ms per client oid.
   # while the GO code was consuming between 5% and 7%
   
+  
+###############
+### FOR JAVA TESTS
+###############
+
+  This section was tested with open JDK14
+  downloaded from https://jdk.java.net/14/
+  make sure the jdk/bin directory is added
+  to your path enviornment variable.
+  
+  set class path to include 
+    CLASSPATH=c:\PostgreSQL12\pgJDBC\postgresql-42.2.12.jar;
+    # The JAR file was downloaded from
+    #   https://jdbc.postgresql.org/download.html
+  
+  Change directory to repo/go  on my machine this is 
+  /jsoft/oidmap/java
+  
+  javac SimpleInQueryTest.java
+  # produces the class file for this.
+  
+  java SimpleInQueryTest
+  # Run the test should show some partbl found 
+  
+  javac InQueryFile.java
+  # Build the test file that generates the SQL with
+  # IN clause dynamically from input file.
+  
+  time java InQueryFile > t.t   
+  #  Run the JAVA program to search on all child oids.
+  #  this file reads the file "../test.map.txt"
+  #  for input.  On my comuter for 29.99 million 
+  #  records running single threaded it took
+  #  25m39.182S or 1539 seconds.   This works out 
+  #  to 0.0513 seconds per client oid query. 
+  On my computer this 
