@@ -39,7 +39,7 @@ func currMS() float64 {
 // to allow exercising postgres with multiple concurent requests. 
 
 func main() {
-    maxBufOids := 550
+    maxBufOids := 50
     
     // connection string
     psqlconn := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable", host, port, user, password, dbname)

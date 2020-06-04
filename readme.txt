@@ -152,13 +152,17 @@ file.
   inQueryFileTest > t.t
   # you can look at times measured in GO using
   # head or tail. 
-  # on my laptop this averaged between 9 and 12 milli-seconds
-  # when using a IN query sized to 150 client oids.
-  # this works out to about 0.06ms per client oid.
-  # When using a 550 client oids in the IN clause the
-  # timing increased to between 15 and 20 milli-seconds
-  # or about 0.037 ms per client oid.   While running 
-  # single threaded the postgres server consumes about
-  # 17.3% of one 4 core I7.
+  # on my laptop this averaged between 1.9 and 2.3
+  # milli-secondswhen using a IN query sized to 50 
+  # client oids. This works out to about 0.04ms per
+  # client oid. I tried settings from batch sizes
+  # from 1 to 2500 and found a few that were slightly
+  # faster but the larger batch size had more 
+  # variablity.
+  # While running single threaded the postgres server
+  # consumes about
+  # 17.3% of one 4 core I7.  In some latter records
+  # it degraded from 20 to 27ms for a timing of about 
+  # 0.05ms per client oid.
   # while the GO code was consuming between 5% and 7%
   
