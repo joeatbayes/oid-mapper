@@ -160,3 +160,5 @@ file.
   # or about 0.037 ms per client oid.   While running 
   # single threaded the postgres server consumes about
   # 17.3% of one 4 core I7.
+  # while the GO code was consuming between 5% and 7%
+  
