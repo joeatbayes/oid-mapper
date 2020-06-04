@@ -25,7 +25,7 @@ Elaspsed time between two timestamps https://stackoverflow.com/questions/1386685
 Save psql output to a file - https://stackoverflow.com/questions/5331320/psql-save-results-of-command-to-a-file
 postgres case statement - https://www.postgresqltutorial.com/postgresql-case/
 Change working memory in postgres https://www.citusdata.com/blog/2018/06/12/configuring-work-mem-on-postgres/
-
+Install postgress on rhel-8 https://www.itzgeek.com/how-tos/linux/centos-how-tos/how-to-install-postgresql-on-rhel-8.html
 
 Stored Procs
   how to create and invoke stored proc - https://www.enterprisedb.com/postgres-tutorials/stored-procedures-postgresql-how-create-stored-procedure-and-invoke-it

@@ -114,9 +114,8 @@ file.
    # when in bash  
    time psql -f db_in_queries.sql
    # this generates a file in_query.RESULTS.txt on my laptop this
-   # took  18m55.372s seconds to run for 29.9 million child oids or about
-   #  0.038 ms per item or 26,427 Lookup per second.   
-   
+   # took  20min23.26sec or 1220 seconds to run for 29.99 million 
+   # child oids or about 0.0408 ms per child oid lookup.
    
    
 #############
