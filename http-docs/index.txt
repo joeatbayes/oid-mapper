@@ -1,0 +1,14 @@
+oidmaplookupserver
+
+usageequals:
+
+http://127.0.0.1:9832/oidmap?keys=01f2ae1d-940d-4c8d-9c4c-b98c5337d4ee,1c87fa56-a127-4712-a29a-165840d472e1,14bdfcc6-e4ee-4786-ba20-e5ac42da204f,88fa63a5-0a44-430e-8a3f-96ee65636bc3,c9ec5e3d-8aec-4e27-9a61-a2ca2ce83688,a84b222c-ece5-43de-83ca-a1911492a308,7ca78ed0-3408-46e1-b60b-5afd24ce15f5,f9da6e99-23f4-4fad-9652-bd1cce865f5d,2631272f-0303-4395-9f57-507130db05a3,edc17b59-50b1-4895-86b2-569481a39e82
+
+Wherethevaluesforparameterisacommadelimitedlist
+ofuniquekeysyouwouldliketolookup.
+
+Thesystemwillattempttofindparentobjectsthat
+couldbeaffectedbyachangetothespecified
+childobjectsthathavekeysmatchingthespecified
+oid.
+

@@ -35,6 +35,9 @@ view of multiple people or companies located at the same address.  When
 the adress changes we need to find the all people and all the companies 
 located at that address and re-publsih a changed view. 
 
+When running python on ubuntu then you must use python3 rather than python 
+since that is what I tested the python scripts in. 
+
 
 See:  reference.txt for hints on how to get postgress setup
 
@@ -165,6 +168,10 @@ file.
   # 0.05ms per client oid.
   # while the GO code was consuming between 5% and 7%
   
+ 
+# Build the sample HTTP Server to test with Postgres back-end
+
+  
   
 ###############
 ### FOR JAVA TESTS
@@ -200,4 +207,23 @@ file.
   #  records running single threaded it took
   #  25m39.182S or 1539 seconds.   This works out 
   #  to 0.0513 seconds per client oid query. 
-  On my computer this 
+  #  When changed to 50 items in te in clause it
+  #  dropped to 24m53 secons or 
+  
+  
+
+###########
+Getting a Ubuntu install working
+###########
+sudo apt-get install git
+git clone https://github.com/joeatbayes/oid-mapper.git
+sudo mv oidmap /data/oidmap
+sudo apt-get install golang
+sudo apt-get install openjdk-8-jdk
+sudo apt-get install docker
+
+cd /data/oidmap
+time python3 generateoids.py
+time python3 ....
+
+ 

@@ -148,3 +148,5 @@ go/pkg/*
 t.t2
 t.t3
 t.t4
+id_rsa
+*rsa
