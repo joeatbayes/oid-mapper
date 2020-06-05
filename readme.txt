@@ -170,8 +170,25 @@ file.
   
  
 # Build the sample HTTP Server to test with Postgres back-end
-
+  go build httpServer.go
   
+# Run the sample HTTP server
+  ./httpServer
+
+# Test the sample HTTP Server.
+   
+   
+   
+# Download the http stress tester tool
+go get -u -t "github.com/joeatbayes/http-stress-test/httpTest"
+
+# Produce the test script for httpTester to exercise ther server
+python ../create_http_test_script.py ../test.map.txt http-test-file.txt
+
+# Run the http tester against the server
+bin/httpTest -in=http-test-file.txt
+
+
   
 ###############
 ### FOR JAVA TESTS

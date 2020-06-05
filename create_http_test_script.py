@@ -2,8 +2,10 @@
 file to load that data into SQL. """
 import sys
 import os
+import json
 
 MaxBufLen = 25
+lineCnt = 0
 
 def quote(str):
     return "\'" + str + "\'"
@@ -13,11 +15,13 @@ def quote(str):
 # a psql file with separate insert statements
 # for each chunk
 def processFile(fname, fout):
+   global lineCnt
    fin = open(fname)
    hdr = fin.readline()
    buf = []
    while True:
      dline = fin.readline().strip()
+     lineCnt += 1
      if dline:
        flds = dline.split(",")
        #print("flds=", flds)
@@ -25,14 +29,17 @@ def processFile(fname, fout):
        paroid = flds[1]
        chiltbl = flds[2]
        chiloid = flds[3]
-       buf.append( "(" + quote(chiloid) + "," + quote(chiltbl) + "," + quote(paroid) + "," + quote(partbl) + ")")
+       buf.append(chiloid)
        if (len(buf) > MaxBufLen) or (not dline):
            if len(buf) > 0:
-             fout.write(insStr + "\n");             
-             sout = ",\n".join(buf)
-             fout.write(sout)
-             fout.write(";\n\n")
-             
+             turi = "http://127.0.0.1:9832/oidmap?keys=" + ",".join(buf)
+             jobj =  {  "id" : str(lineCnt),   
+                         "verb" : "GET", 
+                         "uri" : turi, 
+                         "expected" : 200 }
+             jstr = json.dumps(jobj);
+             fout.write(jstr)
+             fout.write("\n#END\n")
            buf = []                   
      else: 
          break
@@ -41,16 +48,12 @@ def processFile(fname, fout):
 # MAIN
 if len(sys.argv) < 2:
     raise ValueError('Please provide source file name')
-
-fout = open("db_load.sql", "w")
-fout.write("\\c oidmap\n\o db_load.RESULT.txt\n")
 fnameIn = sys.argv[1]
 fnameOut = sys.argv[2]
-print ('fnames=', fnames)
-for fname in fnames:
-    if not os.path.isfile(fname):
-        raise ValueError("Could not find file " + str(fname))
-    processFile(fname, fout)
+fout = open(fnameOut, "w")
+if not os.path.isfile(fnameIn):
+        raise ValueError("Could not find file " + str(fnameIn))
+processFile(fnameIn, fout)
                         
 
 

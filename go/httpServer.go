@@ -164,9 +164,9 @@ func oid_search(w http.ResponseWriter, r *http.Request) {
     //fmt.Println(" parsedQuery=", qparms, " err=", err)
     tmpKeys, ok := qparms["keys"]
     keysStr := strings.Join(tmpKeys, "");
-    fmt.Println("keysStr=", keysStr);
+    //fmt.Println("keysStr=", keysStr);
     keys := strings.Split(keysStr, ",");
-    fmt.Println("keys=", keys);
+    //fmt.Println("keys=", keys);
     if !ok {
         w.WriteHeader(http.StatusBadRequest)
         fmt.Fprintf(w, "query paramter ?keys is mandatory")
@@ -180,7 +180,7 @@ func oid_search(w http.ResponseWriter, r *http.Request) {
       }
     }
     oidsStr := strings.Join(cliOids, ", ")
-    fmt.Println("oidsStr=", oidsStr)
+    //fmt.Println("oidsStr=", oidsStr)
     parseReqElap := time.Since(reqStart)
     
     
@@ -190,7 +190,7 @@ func oid_search(w http.ResponseWriter, r *http.Request) {
     // TODO: Buffer rows and return after we can count the total 
     // results.    
     sqlStr := `SELECT DISTINCT paroid, partbl FROM omap WHERE omap.chiloid IN ( ` + oidsStr +  ` )`
-    fmt.Println("L64: sqlStr=", sqlStr)
+    //fmt.Println("L64: sqlStr=", sqlStr)
     sqlStart := time.Now()
     rows, err := db.Query(sqlStr)
     sqlExecElap := time.Since(sqlStart)
