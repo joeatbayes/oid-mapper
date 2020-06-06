@@ -155,5 +155,5 @@ httpTest.log.txt
 go/inQueryFileTest
 go/httpServer
 go/inQueryFileTest
-go/InQueryFile.class
-go/SimpleInQueryTest.class
+java/InQueryFile.class
+java/SimpleInQueryTest.class
