@@ -152,3 +152,8 @@ id_rsa
 *rsa
 http-test-file.txt
 httpTest.log.txt
+go/inQueryFileTest
+go/httpServer
+go/inQueryFileTest
+go/InQueryFile.class
+go/SimpleInQueryTest.class
