@@ -157,3 +157,6 @@ go/httpServer
 go/inQueryFileTest
 java/InQueryFile.class
 java/SimpleInQueryTest.class
+go/bin/
+go/bin/*
+*kate-swp*

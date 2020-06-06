@@ -142,6 +142,9 @@ file.
 export PGUSER=SomeUserID
 # Set PGPASS = password you want to connect to postgess with
 export PGPASS=SomePassword
+# See the Configure Ubuntu Linux below for instructions
+# on getting most recent version of golang we used 
+# some features in version 1.13
 
 # Setup local enviornment
    #open shell windows to repodirectory/go
@@ -194,8 +197,7 @@ export PGPASS=SomePassword
   ./httpServer
 
 # Test the sample HTTP Server.
-   
-   
+      
    
 # Download the http stress tester tool
 go get -u -t "github.com/joeatbayes/http-stress-test/httpTest"
@@ -203,18 +205,33 @@ go get -u -t "github.com/joeatbayes/http-stress-test/httpTest"
 # Produce the test script for httpTester to exercise ther server
 python ../create_http_test_script.py ../test.map.txt http-test-file.txt
 
-# Run the http tester against the server
-# Single Threaded
-httpTest -MaxThread=1 -in=http-test-file.txt > t.t
+# Single threaded test against server
+time bin/httpTest -MaxThread=1 -in=http-test-file.txt > t.t
+  # *1 - 
+  # *2 - 
 
-# Heavy Load
-httpTest -MaxThread=100 -in=http-test-file.txt > t.t
+# Slightly Heavier Load
+time bin/httpTest -MaxThread=2 -in=http-test-file.txt > t.t
+  # *2 = 6m21s - (((6*60)+21)*1000)/29900000 = 0.01275ms per oid
+  
+# Medium Low load
+time bin/httpTest -MaxThread=4 -in=http-test-file.txt > t.t
+  # *2 = 7m15s - (((7*60)+15)*1000)/29900000= 0.01455ms per oid
 
-bin/httpTest -in=http-test-file.txt
-# if you skip the seteng to set gopath then 
-# location of httptest executable may be different.
+# Medium load
+time bin/httpTest -MaxThread=20 -in=http-test-file.txt > t.t
+  # *2 = 8m30s - (((8*60)+30)*1000)/29900000= 0.0171ms per oid
 
+# Stress Test Load
+time bin/httpTest -MaxThread=75 -in=http-test-file.txt > t.t
+  # *2 = 11m15s - (((11*60)+15)*1000)/29900000= 0.0226ms per oid
+         High variablity at this load with some requests 
+         reaching 300ms response time when average is abount
+         30ms. The top server load average is 48.3 with 
+         tons of postgres processes consuming relatively
+         small amounts.  
 
+         
   
 ###############
 ### FOR JAVA TESTS
@@ -276,6 +293,8 @@ wget https://dl.google.com/go/go1.13.3.linux-amd64.tar.gz
 sudo tar -xvf go1.13.3.linux-amd64.tar.gz
 sudo mv go /usr/local
 rm go1.13.3.linux-amd64.tar.gz
+# Required to allow GO to build for other architectures
+sudo chmod -R 777 /usr/local/go/pkg
 
 # Edit ~/.profile incude the following lines to let bash know where to look for GO
 # cd ~

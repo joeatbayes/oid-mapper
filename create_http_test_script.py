@@ -36,7 +36,8 @@ def processFile(fname, fout):
              jobj =  {  "id" : str(lineCnt),   
                          "verb" : "GET", 
                          "uri" : turi, 
-                         "expected" : 200 }
+                         "expected" : 200,
+                         "rematch" : "SQL.?Exec"}
              jstr = json.dumps(jobj);
              fout.write(jstr)
              fout.write("\n#END\n")
