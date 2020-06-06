@@ -151,3 +151,4 @@ t.t4
 id_rsa
 *rsa
 http-test-file.txt
+httpTest.log.txt
