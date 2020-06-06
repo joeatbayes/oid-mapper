@@ -85,10 +85,11 @@ Load Postgress with the oids data
   # by running a bash and then executing the 
   # same command you would on linux.  
   # *1 - 29.9 million  records it took  67m50s. or 4060 seconds 
-  #     with out of the box postgress configuration
-  #    This works out to 7364 records inserted per second.
-  # *2 - 29.9 million records took 17m51.99s
-  #     With modified postgress config shown below.
+  #      with out of the box postgress configuration
+  #      or  7.36K records per second.
+  # *2 - 29.9 million records took 17m51.99s 
+  #       or 27.8K records per second.
+  #       With modified postgress config shown below.
   
   
 Generate the file containing queries to test obtaining the distinct 
@@ -106,9 +107,9 @@ every child oid and table in the input data.
   time psql -f db_simple_queries.sql
   # This run will generate a file simple_query.RESULTS.txt
   # that shows the results of every query.
-  # *1- On my laptop this took ... seconds for 29.9 million records
-  # or about ... milli-seconds per query.
-  #*2-1m17.242s
+  # *1- ...m...s for 29.99 million records
+  #      or about ... milli-seconds per query.
+  # *2-  
   
 
 Generate sql file to Query for the parents for every child OID in 
@@ -239,7 +240,8 @@ bin/httpTest -in=http-test-file.txt
   
   
 ###########
-Getting a Ubuntu install working
+## Getting a Ubuntu install working
+## Postgres 10 on Ubuntu 18.04 desktop
 ###########
 sudo apt-get install git
 git clone https://github.com/joeatbayes/oid-mapper.git
@@ -355,7 +357,9 @@ max_parallel_workers = 3
 # END OF postgresql.conf edits.
 sudo service postgresql restart
 
-
+# These Generation script next 5 lines 
+# are the same as those above. included 
+# here to  keep continutiy in this section
 time python generateoids.py
 time python create_db_load.py test.map.txt
 time psql -f db_simple_queries.sql
