@@ -231,7 +231,22 @@ time bin/httpTest -MaxThread=75 -in=http-test-file.txt > t.t
          tons of postgres processes consuming relatively
          small amounts.  
 
-         
+# Stress Test Load abuse
+time bin/httpTest -MaxThread=250 -in=http-test-file.txt > t.t
+  # *2 = 10m22s - (((10*60)+22)*1000)/29900000= 0.0208ms per oid
+         High variablity at this load with some requests 
+         reaching 3000ms response time with lot over 
+         500ms.  There are still about 50% comming through
+         in less than 25ms.  The top server load average is 40 with 
+         tons of postgres processes consuming relatively
+         small amounts.  
+
+# Note: When I tested with 750 connections I got errors in the server too many open #   files.   After further experimentation I found that it worked fine with 400 
+#   MaxThread and fails at 450. I could bump this up by modifyng the 
+#   linux limits but it is already CPU starved so would provide little
+#   benefit.  The server does recover as soon as excess requests stop 
+#   being made.
+
   
 ###############
 ### FOR JAVA TESTS
