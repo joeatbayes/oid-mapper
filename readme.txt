@@ -109,7 +109,7 @@ every child oid and table in the input data.
   # that shows the results of every query.
   # *1- ...m...s for 29.99 million records
   #      or about ... milli-seconds per query.
-  # *2-  
+  # *2-   66m34.02s - 
   
 
 Generate sql file to Query for the parents for every child OID in 
@@ -118,7 +118,7 @@ the system using the IN clause.
   python generateInQueries.py test.map.txt
   # generates a file db_in_queries.sql
   # *1- 107 seconds to generate for 29.99 million rows. 
-  # *2- 0m37.944s
+  # *2- 0m37.944s = (((66*60)+34)*1000)/29900000 = 0.137ms per oid
   
 
 Run the query to select the parents for every child OID in the input
