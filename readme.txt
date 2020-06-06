@@ -208,7 +208,7 @@ python ../create_http_test_script.py ../test.map.txt http-test-file.txt
 # Single threaded test against server
 time bin/httpTest -MaxThread=1 -in=http-test-file.txt > t.t
   # *1 - 
-  # *2 - 
+  # *2 - 19m33s - (((19*60)+30)*1000)/29900000 = 0.039ms per oid
 
 # Slightly Heavier Load
 time bin/httpTest -MaxThread=2 -in=http-test-file.txt > t.t
