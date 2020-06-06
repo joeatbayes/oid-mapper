@@ -1,0 +1,3 @@
+Update GO & Java examples to read PGUSER enviornment variable to build connect string.
+
+Figure out what is wrong with http test so it stops error out when testing multi-threaded.

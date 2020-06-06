@@ -3,7 +3,7 @@ file to load that data into SQL. """
 import sys
 import os
 
-MaxBufLen = 25
+MaxBufLen = 50000
 
 def quote(str):
     return "\'" + str + "\'"
@@ -16,6 +16,7 @@ def processFile(fname, fout):
    fin = open(fname)
    hdr = fin.readline()
    buf = []
+   insStr = "INSERT INTO omap(chiloid, chiltbl, paroid, partbl) VALUES"
    while True:
      dline = fin.readline().strip()
      if dline:
@@ -44,8 +45,7 @@ if len(sys.argv) < 2:
 
 fout = open("db_load.sql", "w")
 fout.write("\\c oidmap\n\o db_load.RESULT.txt\n")
-fnameIn = sys.argv[1]
-fnameOut = sys.argv[2]
+fnames = sys.argv[1:]
 print ('fnames=', fnames)
 for fname in fnames:
     if not os.path.isfile(fname):
