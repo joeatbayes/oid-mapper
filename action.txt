@@ -1,3 +1,6 @@
-Update GO & Java examples to read PGUSER enviornment variable to build connect string.
+python script generating db load does not seem to be including last oids shown in input file. 
 
 Figure out what is wrong with http test so it stops error out when testing multi-threaded.
+
+
+DONE:JOE:202-06-06: Update GO & Java examples to read PGUSER enviornment variable to build connect string.

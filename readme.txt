@@ -109,7 +109,7 @@ every child oid and table in the input data.
   # that shows the results of every query.
   # *1- ...m...s for 29.99 million records
   #      or about ... milli-seconds per query.
-  # *2-   66m34.02s - 
+  # *2-   60m26s - (((60*60)+26)*1000)/29900000 = 0.12ms per oid
   
 
 Generate sql file to Query for the parents for every child OID in 
@@ -118,7 +118,7 @@ the system using the IN clause.
   python generateInQueries.py test.map.txt
   # generates a file db_in_queries.sql
   # *1- 107 seconds to generate for 29.99 million rows. 
-  # *2- 0m37.944s = (((66*60)+34)*1000)/29900000 = 0.137ms per oid
+  # *2- 0m37.944s = 
   
 
 Run the query to select the parents for every child OID in the input
@@ -135,6 +135,13 @@ file.
 #############
 ## FOR GOLANG TESTS
 #############
+# We use enviornment variables to obtain the user and password 
+# needed to connect to postrgess when building the DB connect 
+# string.   You will need to set these prior to running the test.
+# Set  PGUSER = user you want to connect as
+export PGUSER=SomeUserID
+# Set PGPASS = password you want to connect to postgess with
+export PGPASS=SomePassword
 
 # Setup local enviornment
    #open shell windows to repodirectory/go
@@ -197,7 +204,15 @@ go get -u -t "github.com/joeatbayes/http-stress-test/httpTest"
 python ../create_http_test_script.py ../test.map.txt http-test-file.txt
 
 # Run the http tester against the server
+# Single Threaded
+httpTest -MaxThread=1 -in=http-test-file.txt > t.t
+
+# Heavy Load
+httpTest -MaxThread=100 -in=http-test-file.txt > t.t
+
 bin/httpTest -in=http-test-file.txt
+# if you skip the seteng to set gopath then 
+# location of httptest executable may be different.
 
 
   
@@ -243,6 +258,7 @@ bin/httpTest -in=http-test-file.txt
 ## Getting a Ubuntu install working
 ## Postgres 10 on Ubuntu 18.04 desktop
 ###########
+sudo apt-get install vim
 sudo apt-get install git
 git clone https://github.com/joeatbayes/oid-mapper.git
 
@@ -252,7 +268,23 @@ cd /data/oidmap
 
 # Required package install
 sudo apt-get update
-sudo apt-get install golang
+sudo apt-get -y upgrade
+
+# we need golang version 1.13 or newer for the strings.replaceAll
+#   https://tecadmin.net/install-go-on-ubuntu/
+wget https://dl.google.com/go/go1.13.3.linux-amd64.tar.gz
+sudo tar -xvf go1.13.3.linux-amd64.tar.gz
+sudo mv go /usr/local
+rm go1.13.3.linux-amd64.tar.gz
+
+# Edit ~/.profile incude the following lines to let bash know where to look for GO
+# cd ~
+#  sudo vim .profile
+export GOROOT=/usr/local/go
+export GOPATH=$HOME/Projects/Proj1
+export PATH=$GOPATH/bin:$GOROOT/bin:$PATH
+
+
 sudo apt-get install openjdk-8-jdk
 sudo apt-get install docker
 sudo apt-get install postgresql postgresql-contrib
@@ -261,6 +293,8 @@ sudo apt-get install postgresql postgresql-contrib
 
 # Install the jdbc drivers for postgres
 sudo apt-get install libpostgresql-jdbc-java
+
+sudo apt-get update
 
 # Configuring Postgress
 # See: https://tecadmin.net/install-postgresql-server-on-ubuntu/

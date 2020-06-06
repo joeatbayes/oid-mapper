@@ -19,11 +19,11 @@ import (
 )
 
 const (
-    host     = "localhost"
-    port     = 5432
-    user     = "postgres"
-    password = "test"
-    dbname   = "oidmap"
+    host            = "localhost"
+    port             = 5432
+    defaultUser = "postgres"
+    defaultPass = "test"
+    dbname      = "oidmap"
 )
 
 
@@ -79,6 +79,11 @@ var db *sql.DB
  during every call */
 func bdInit() {
     var err error
+    osuser := os.Getenv("PGUSER");
+    ospass := os.Getenv("PGPASS");
+    if osuser < " " { osuser =defaultUser }
+    if ospass < " " { ospass =  defaultPass }
+
     //-----
     //-- Obtain SQL Connection
     //-----
@@ -86,7 +91,8 @@ func bdInit() {
     //---
     // Check the DB for requested oids
     //----
-    psqlconn := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable", host, port, user, password, dbname)
+    psqlconn := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable", host, port, osuser, ospass, dbname)
+         
          
     // open database
     // TODO: Move DB to a global variable and re-use
