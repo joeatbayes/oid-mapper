@@ -280,10 +280,11 @@ time bin/httpTest -MaxThread=250 -in=http-test-file.txt > t.t
   #  this file reads the file "../test.map.txt"
   #  for input.  On my comuter for 29.99 million 
   #  records running single threaded it took
-  #  25m39.182S or 1539 seconds.   This works out 
-  #  to 0.0513 seconds per client oid query. 
-  #  When changed to 50 items in te in clause it
-  #  dropped to 24m53 secons or 
+  #  *1 = 25m39.182S or 1539 seconds.   This works out 
+  #       to 0.0513 seconds per client oid query. 
+  #       When changed to 50 items in te in clause it
+  #       dropped to 24m53 secons or 
+  #  *2 = 10m22s - (((10*60)+22)*1000)/29900000= 0.0208ms per oid
   
   
 ###########
@@ -456,6 +457,25 @@ SELECT pg_size_pretty(pg_relation_size('omap'));
 SELECT pg_size_pretty(pg_indexes_size('index_empid'));
 // Get # rows in main table
 SELECT COUNT(*) FROM omap;
+
+
+
+## Setup JDBC Driver for Postgres
+cd oidmap/java
+wget https://jdbc.postgresql.org/download/postgresql-42.2.13.jar
+# Add oidmap/java/postgresql-42.2.13.jar to java class path
+# by editing ~/.profile and adding the the line
+sudo vi ~/.profile
+# Add the line
+export CLASSPATH=~/oidmap/java/postgresql-42.2.13.jar
+export CLASSPATH=~/oidmap/java/postgresql-42.2.13.jar:$CLASSPATH
+#activate new setting in current terminal
+source ~/.profile
+# ensure the environment variables PGUSER and PGPASS are set.
+# to reflect what you have configured for postgres.
+javac InQueryFile.java
+java InQueryFile
+
 
 
 

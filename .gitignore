@@ -160,3 +160,4 @@ java/SimpleInQueryTest.class
 go/bin/
 go/bin/*
 *kate-swp*
+*postgresql-*.jar

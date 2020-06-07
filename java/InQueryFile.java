@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.io.*;
 import java.util.Scanner;
 import java.util.List;
+import java.util.Map;
     
 public class InQueryFile {
    static List<String> buff = new ArrayList<String>();  
@@ -46,9 +47,17 @@ public class InQueryFile {
    public static void main( String args[] ) {
       try {
          // TODO: Get File Name for input file from ARGS
+         Map<String, String> env = System.getenv();
+         //System.out.println("env=", env);
+         String pguser = env.get("PGUSER");
+         String pgpass = env.get("PGPASS");
+         if ((pguser == null) || (pgpass == null)) {
+           System.out.println("FATAL please set PGUSER & PGPASS enviornment variables");
+           System.exit(1);
+         }
          Class.forName("org.postgresql.Driver");
          c = DriverManager
-            .getConnection("jdbc:postgresql://localhost:5432/oidmap", "postgres", "test");
+            .getConnection("jdbc:postgresql://localhost:5432/oidmap", pguser, pgpass);
          c.setAutoCommit(false);
          System.out.println("Opened database successfully");
          stmt = c.createStatement();
