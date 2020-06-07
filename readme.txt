@@ -257,10 +257,16 @@ time bin/httpTest -MaxThread=250 -in=http-test-file.txt > t.t
   make sure the jdk/bin directory is added
   to your path enviornment variable.
   
+  
   set class path to include 
     CLASSPATH=c:\PostgreSQL12\pgJDBC\postgresql-42.2.12.jar;
     # The JAR file was downloaded from
     #   https://jdbc.postgresql.org/download.html
+    # See Java instructions for Ubuntu below 
+    
+  # Ensure the PGUSER and PGPASS enviornment
+  # variables are set to reflect what has been
+  # configured in postgres.
   
   Change directory to repo/go  on my machine this is 
   /jsoft/oidmap/java
@@ -284,7 +290,7 @@ time bin/httpTest -MaxThread=250 -in=http-test-file.txt > t.t
   #       to 0.0513 seconds per client oid query. 
   #       When changed to 50 items in te in clause it
   #       dropped to 24m53 secons or 
-  #  *2 = 10m22s - (((10*60)+22)*1000)/29900000= 0.0208ms per oid
+  #  *2 = 14m0.9s - (((14*60)+0.94)*1000)/29900000= 0.0281ms per oid
   
   
 ###########
