@@ -161,3 +161,4 @@ go/bin/
 go/bin/*
 *kate-swp*
 *postgresql-*.jar
+*.RESULT.txt
