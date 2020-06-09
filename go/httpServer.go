@@ -103,7 +103,8 @@ func bdInit() {
     // check db
     err = db.Ping()
     CheckError(err)
-    db.SetMaxIdleConns(25)
+    db.SetMaxIdleConns(50)
+    db.SetMaxOpenConns(50)
     getConElap := time.Since(getConStart)
     fmt.Println("Get DB Connection ", psqlconn, " elap=", getConElap)
 }
@@ -206,7 +207,7 @@ func oid_search(w http.ResponseWriter, r *http.Request) {
     // TODO: Buffer rows and return after we can count the total 
     // results.    
     sqlStr := `SELECT DISTINCT paroid, partbl FROM omap WHERE omap.chiloid IN ( ` + oidsStr +  ` )`
-    //fmt.Println("L64: sqlStr=", sqlStr)
+    fmt.Println("L64: sqlStr=", sqlStr)
     sqlStart := time.Now()
     rows, err := db.Query(sqlStr)
     sqlExecElap := time.Since(sqlStart)
