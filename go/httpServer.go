@@ -14,6 +14,7 @@ import (
     "strings"
     "database/sql"
    _ "github.com/lib/pq"
+    "io/ioutil"
     "time"
         
 )
@@ -102,6 +103,7 @@ func bdInit() {
     // check db
     err = db.Ping()
     CheckError(err)
+    db.SetMaxIdleConns(25)
     getConElap := time.Since(getConStart)
     fmt.Println("Get DB Connection ", psqlconn, " elap=", getConElap)
 }
@@ -172,6 +174,14 @@ func oid_search(w http.ResponseWriter, r *http.Request) {
     keysStr := strings.Join(tmpKeys, "");
     //fmt.Println("keysStr=", keysStr);
     keys := strings.Split(keysStr, ",");
+    bodyArr, bodyErr := ioutil.ReadAll(r.Body);
+    r.Body.Close()
+    if bodyErr != nil {
+       fmt.Printf("Error reading body err=", bodyErr)
+    }
+    if len(bodyArr) > 0 {
+       fmt.Printf("bytes read=", len(bodyArr))
+    }
     //fmt.Println("keys=", keys);
     if !ok {
         w.WriteHeader(http.StatusBadRequest)
@@ -203,7 +213,7 @@ func oid_search(w http.ResponseWriter, r *http.Request) {
     sqlIterStart:= time.Now()
     CheckError(err)
     //fmt.Println("L66: err=", err)
-    defer rows.Close()
+    rows.Close()
     w.WriteHeader(http.StatusOK)
     cnt := 0;
     for rows.Next() {
@@ -230,6 +240,7 @@ func oid_search(w http.ResponseWriter, r *http.Request) {
 
 
 func main() {
+    http.DefaultTransport.(*http.Transport).MaxIdleConnsPerHost = 100
     bdInit()
     http.Handle("/", http.FileServer(http.Dir("../http-docs")))
     // When path ends with "/" it is treated as a tree root
