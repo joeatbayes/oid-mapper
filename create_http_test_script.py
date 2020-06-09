@@ -22,15 +22,9 @@ def processFile(fname, fout):
    while True:
      dline = fin.readline().strip()
      lineCnt += 1
-     if dline:
-       flds = dline.split(",")
-       #print("flds=", flds)
-       partbl = flds[0]
-       paroid = flds[1]
-       chiltbl = flds[2]
-       chiloid = flds[3]
-       buf.append(chiloid)
-       if (len(buf) > MaxBufLen) or (not dline):
+     # Flush if End of file or
+     # if too many items buffered
+     if (len(buf) > MaxBufLen) or (not dline):
            if len(buf) > 0:
              turi = "http://127.0.0.1:9832/oidmap?keys=" + ",".join(buf)
              jobj =  {  "id" : str(lineCnt),   
@@ -42,6 +36,15 @@ def processFile(fname, fout):
              fout.write(jstr)
              fout.write("\n#END\n")
            buf = []                   
+
+     if dline:
+       flds = dline.split(",")
+       #print("flds=", flds)
+       partbl = flds[0]
+       paroid = flds[1]
+       chiltbl = flds[2]
+       chiloid = flds[3]
+       buf.append(chiloid)
      else: 
          break
      
