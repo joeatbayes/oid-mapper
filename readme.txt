@@ -44,10 +44,19 @@ See:  reference.txt for hints on how to get postgress setup
 Most commands are written to be ran from the command line using psql.
 They assume that you are on linux or have cygwin bash installed.
 
+####
+# Machine Configs
+####
 *1 - Basic Tests ran on Dell laptop with SSD.
 *2 - Indicates test ran on IBM P92, I5-3470@3.2GHzx4, 
       16GB Ram, 256GB SSD. Ubuntu 18.04.4LTS
- 
+*3 - Super Micro openstack VM with 16 CPU, 126GB
+     Ram fast NVME drives.   CPU.... CPU speed...
+     drive speed...   With config changed recomended
+     by pgtune. 
+     
+git clone https://github.com/joeatbayes/oid-mapper.git oidmap
+
 Create the database, table, index for the mapping file
   psql -f create_db.sh
   # This will remove and recreate the table
@@ -64,6 +73,7 @@ Generate sample oids mapping file:
   # the total number is random but on my test it actually produced 
   # 29,995,113 million rows in 11.25 minutes.
   #*2 - 12m8.459s
+  #*3 - 05m24.9s
   
 Convert the oids file data file into a SQL command file to feed into postgress
   python create_db_load.py test.map.txt
@@ -73,7 +83,8 @@ Convert the oids file data file into a SQL command file to feed into postgress
   # sum of the data passed in the list of input files.
   # *1-on my machine this took 201 seconds for 29.9 million 
   # records.
-  #*2-1m9.7s - 69 seconds
+  # *2-1m9.7s - 69 seconds
+  # *3-0m44s 
   
   
 Load Postgress with the oids data 
@@ -90,6 +101,7 @@ Load Postgress with the oids data
   # *2 - 29.9 million records took 17m51.99s 
   #       or 27.8K records per second.
   #       With modified postgress config shown below.
+  # *3  - 9m14s
   
   
 Generate the file containing queries to test obtaining the distinct 
@@ -100,6 +112,7 @@ parent oid, and table for every chiold oid in the system.
   #   112,406 per second.
   #*2-
   # It generates the file db_simple_queries.sql
+  # *3 - 0m37.1s
   
 Run the query to select the parent oid and table for
 every child oid and table in the input data.
@@ -110,6 +123,7 @@ every child oid and table in the input data.
   # *1- ...m...s for 29.99 million records
   #      or about ... milli-seconds per query.
   # *2-   60m26s - (((60*60)+26)*1000)/29900000 = 0.12ms per oid
+  # *3-   60m26s - (((60*60)+26)*1000)/29900000 = 0.12ms per oid
   
 
 Generate sql file to Query for the parents for every child OID in 
@@ -119,6 +133,7 @@ the system using the IN clause.
   # generates a file db_in_queries.sql
   # *1- 107 seconds to generate for 29.99 million rows. 
   # *2- 0m37.944s = 
+  # *3- 0m26.5s
   
 
 Run the query to select the parents for every child OID in the input
@@ -129,7 +144,8 @@ file.
    # *1-  20min23.26sec or 1220 seconds to run for 29.99 million 
    #       child oids or about 0.0408 ms per child oid lookup.
    # *2-  8m18s or (((8*60)+18)*1000)/29900000 = 0.0167ms per oid lookup
-   #
+   # *3-  5m7s or (((5*60)+7)*1000)/29900000 = 0.0103ms per oid lookup
+   
    
    
 #############
@@ -221,6 +237,7 @@ time bin/httpTest -MaxThread=4 -in=http-test-file.txt > t.t
 # Medium load
 time bin/httpTest -MaxThread=20 -in=http-test-file.txt > t.t
   # *2 = 8m30s - (((8*60)+30)*1000)/29900000= 0.0171ms per oid
+  # *3 = 1m40 - (((1*60)+40)*1000)/29900000= 0.00334ms per oid
 
 # Stress Test Load
 time bin/httpTest -MaxThread=75 -in=http-test-file.txt > t.t
@@ -299,7 +316,8 @@ time bin/httpTest -MaxThread=250 -in=http-test-file.txt > t.t
 ###########
 sudo apt-get install vim
 sudo apt-get install git
-git clone https://github.com/joeatbayes/oid-mapper.git
+git clone https://github.com/joeatbayes/oid-mapper.git oidmap
+sudo chmod -R o+rwx /data/oidmap
 
 # If using machine with high speed storage on /data
 sudo mv oidmap /data/oidmap
@@ -312,6 +330,10 @@ sudo apt-get -y upgrade
 # we need golang version 1.13 or newer for the strings.replaceAll
 #   https://tecadmin.net/install-go-on-ubuntu/
 wget https://dl.google.com/go/go1.13.3.linux-amd64.tar.gz
+#    NOTE:  On some machines using corporate proxies the wget
+#    may not be allowed so you must obtian the file and transer 
+#    using an alternative mechanism.  Or get the server added
+#    to the approved list.
 sudo tar -xvf go1.13.3.linux-amd64.tar.gz
 sudo mv go /usr/local
 rm go1.13.3.linux-amd64.tar.gz
@@ -342,11 +364,13 @@ sudo apt-get update
 sudo su - postgres
 psql
 # with postgres-# prompt
-   CREATE ROLE test WITH LOGIN CREATEDB ENCRYPTED PASSWORD 'test'
+   CREATE ROLE test WITH LOGIN CREATEDB ENCRYPTED PASSWORD 'test';
+   CREATE ROLE YourUserId WITH LOGIN CREATEDB ENCRYPTED PASSWORD 'YourPassword';
    # To show the users in the system to verify your user was created
    \du
    CREATE DATABASE jwork WITH OWNER jwork;
    CREATE DATABASE test WITH OWNER test;
+   CREATE DATABASE yourUserId WITH OWNER YourUserId;
    \q
 #  The Create database is done for each user created since the 
 #  default database the system will attempt to connect to is same
@@ -361,12 +385,13 @@ exit
 # I found the ubuntu settings at /etc/postgresql/10/main
 # You may have to look elsewhere.   If you desparate 
 # to find yours tyr the following
-#   sudo find / | grep posgresssql.conf
+#   sudo find / | grep postgresssql.conf
 
 # Edit the file 
    /etc/postgresql/10/main/pg_hba.conf
    # sudo vi  /etc/postgresql/10/main/pg_hba.conf
    # Add the followiing lines after the line that says local all postgres peer
+   # In another linux server I found it at sudo vi  /etc/postgresql/9.5/main/pg_hba.conf
    # so the file looks like
    local   all             postgres                                peer
    local   all             jwork                                   md5
@@ -374,15 +399,40 @@ exit
 
 # Now we must enable network listener.
 # Edit file sudo vi /etc/postgresql/10/main/postgresql.conf
-#  sudo vi /etc/postgresql/10/main/postgresql.conf
+#  sudo vi /etc/postgresql/9.5/main/postgresql.conf
 #  Change the line
+#  Use the proper location for where your postgres is 
+#  installed. 
    # listen_addresses = 'localhost'   
 # to  the following by removing the leading #
    listen_addresses = 'localhost'   
 
+##
+# Moving Default Data Location
+##
+#  While editing the config file change the data_directory, hba_file and ident_file 
+#  to the desired location.  Assuming /data is where you have the fast
+#  storage mounted 
+  sudo mkdir /data/postgress
+  sudo ls /data/postgress/postgresql/9.5/main     
+  sudo systemctl stop postgresql  
+  sudo systemctl status postgresql
+  sudo rsync -av /var/lib/postgresql /data/postgress
+  sudo mv /var/lib/postgresql/9.5/main /var/lib/postgresql/9.5/main.bak
+  # Edit the postgresql.conf to include 
+  data_directory = '/data/postgress/postgresql/9.5/main'
+  sudo systemctl start postgresql
+  sudo systemctl status postgresql
+  sudo su - postgres
+  psql
+  SHOW data_directory;
+  \q
+  exit
+
 
 # Restart the server 
- sudo service postgresql restart
+sudo service postgresql restart
+
 
 # Check to see if postgres server is running 
 service --status-all
@@ -411,6 +461,7 @@ sudo vi /etc/postgresql/10/main/postgresql.conf
 # CPUs num: 4
 # Data Storage: ssd
 
+
 # Joe reduced some of these settings 
 # because it was pegging the system .
 # during the database load.
@@ -436,6 +487,8 @@ sudo service postgresql restart
 # are the same as those above. included 
 # here to  keep continutiy in this section
 time python generateoids.py
+  # Or on machines with short timeout disconnect
+  nohup time python3 generateoids.py > t.t >2 t.t.err &  
 time python create_db_load.py test.map.txt
 time psql -f db_simple_queries.sql
 time python generateInQueries.py test.map.txt
@@ -473,7 +526,6 @@ wget https://jdbc.postgresql.org/download/postgresql-42.2.13.jar
 # by editing ~/.profile and adding the the line
 sudo vi ~/.profile
 # Add the line
-export CLASSPATH=~/oidmap/java/postgresql-42.2.13.jar
 export CLASSPATH=~/oidmap/java/postgresql-42.2.13.jar:$CLASSPATH
 #activate new setting in current terminal
 source ~/.profile
@@ -493,3 +545,22 @@ java InQueryFile
 
 # Execute the Java Samples from Above
 
+
+
+
+# Modify Linux limits to allow more open files
+  sudo vi /etc/security/limits.conf
+  # add the following lines
+  root soft     nproc          131072
+  root hard     nproc          131072
+  root soft     nofile         131072
+  root hard     nofile         131072
+  jellsworth    hard           maxlogins       50
+
+
+# Fix the SSH session timeout issue
+  sudo vi /etc/ssh_config
+  # Add the lines 
+  ClientAliveInterval 120
+  ClientAliveCountMax 720
+  
