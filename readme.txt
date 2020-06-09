@@ -236,27 +236,36 @@ time bin/httpTest -MaxThread=4 -in=http-test-file.txt > t.t
 
 # Medium load
 time bin/httpTest -MaxThread=20 -in=http-test-file.txt > t.t
-  # *2 = 8m30s - (((8*60)+30)*1000)/29900000= 0.0171ms per oid
-  # *3 = 1m40 - (((1*60)+40)*1000)/29900000= 0.00334ms per oid
+  # *2 = 4m20s - (((4*60)+20)*1000)/29900000= 0.008ms per oid
+  # *3 = 1m57 - (((1*60)+75)*1000)/29900000= 0.0045ms per oid
 
 # Stress Test Load
 time bin/httpTest -MaxThread=75 -in=http-test-file.txt > t.t
-  # *2 = 11m15s - (((11*60)+15)*1000)/29900000= 0.0226ms per oid
+  # *2 = 3m37s - (((3*60)+37)*1000)/29900000= 0.0073ms per oid
          High variablity at this load with some requests 
          reaching 300ms response time when average is abount
          30ms. The top server load average is 48.3 with 
          tons of postgres processes consuming relatively
          small amounts.  
-
+ # *3 = 1m31s - (((1*60)+31)*1000)/29900000= 0.003ms per oid
+ 
 # Stress Test Load abuse
 time bin/httpTest -MaxThread=250 -in=http-test-file.txt > t.t
-  # *2 = 10m22s - (((10*60)+22)*1000)/29900000= 0.0208ms per oid
+  # *2 = 3m26s - (((3*60)+26)*1000)/29900000= 0.0069ms per oid
          High variablity at this load with some requests 
          reaching 3000ms response time with lot over 
          500ms.  There are still about 50% comming through
          in less than 25ms.  The top server load average is 40 with 
          tons of postgres processes consuming relatively
          small amounts.  
+  # *3 = 1m13s - (((1*60)+13)*1000)/29900000= 0.00244ms per oid
+
+time bin/httpTest -MaxThread=400 -in=http-test-file.txt > t.t
+  # *3 = 1m7.6s - (((1*60)+7.6)*1000)/29900000= 0.00226ms per oid
+
+time bin/httpTest -MaxThread=600 -in=http-test-file.txt > t.t
+  # *3 = 1m5.2s - (((1*60)+5.2)*1000)/29900000= 0.00218ms per oid
+
 
 # Note: When I tested with 750 connections I got errors in the server too many open #   files.   After further experimentation I found that it worked fine with 400 
 #   MaxThread and fails at 450. I could bump this up by modifyng the 

@@ -1,9 +1,9 @@
 python script generating db load does not seem to be including last oids shown in input file. 
 
 httpServer seems to slow down after 2 threads. I think we are 
-hitting it from the client without blocking so I thnk something 
-is blocking in the postgress client side connection manager 
-becuase postgress cpu usage actually drops when hitting it harder.
+   hitting it from the client without blocking so I thnk something 
+   is blocking in the postgress client side connection manager 
+   becauseuase postgress cpu usage actually drops when hitting it harder.
 
 DONE:JOE:2020-06-07: Modify Java examples to login with PGUSER and PGPASS enviornment variables. 
 DONE:JOE:2020-06-06: Figure out what is wrong with http test so it stops error out when testing multi-threaded.
