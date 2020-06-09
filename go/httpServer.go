@@ -230,7 +230,11 @@ func oid_search(w http.ResponseWriter, r *http.Request) {
     totReqElap := time.Since(reqStart);
     sqlIterElap := time.Since(sqlIterStart)
     fmt.Fprintf(w,"--Num keys=%d\n", len(keys));
-    fmt.Fprintf(w,"--Num Match=%d\n" , cnt);
+    if cnt > 0 {
+      fmt.Fprintf(w,"--Num Match=%d\n" , cnt);
+    } else {
+        fmt.Fprintf(w,"--No Rec Match\n");
+    }
     fmt.Fprintf(w,"--parse Req=%s\n", parseReqElap);
     fmt.Fprintf(w,"--SQL Exec=%s\n" , sqlExecElap);
     fmt.Fprintf(w,"--SQL Iter=%s\n", sqlIterElap);
