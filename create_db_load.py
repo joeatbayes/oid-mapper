@@ -19,6 +19,16 @@ def processFile(fname, fout):
    insStr = "INSERT INTO omap(chiloid, chiltbl, paroid, partbl) VALUES"
    while True:
      dline = fin.readline().strip()
+     # Flush if EOF or too many items
+     if (len(buf) > MaxBufLen) or (not dline):
+           if len(buf) > 0:
+             fout.write(insStr + "\n");             
+             sout = ",\n".join(buf)
+             fout.write(sout)
+             fout.write(";\n\n")             
+           buf = []      
+           
+     # Process single line
      if dline:
        flds = dline.split(",")
        #print("flds=", flds)
@@ -27,14 +37,7 @@ def processFile(fname, fout):
        chiltbl = flds[2]
        chiloid = flds[3]
        buf.append( "(" + quote(chiloid) + "," + quote(chiltbl) + "," + quote(paroid) + "," + quote(partbl) + ")")
-       if (len(buf) > MaxBufLen) or (not dline):
-           if len(buf) > 0:
-             fout.write(insStr + "\n");             
-             sout = ",\n".join(buf)
-             fout.write(sout)
-             fout.write(";\n\n")
-             
-           buf = []                   
+                    
      else: 
          break
      
