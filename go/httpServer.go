@@ -207,24 +207,27 @@ func oid_search(w http.ResponseWriter, r *http.Request) {
     // TODO: Buffer rows and return after we can count the total 
     // results.    
     sqlStr := `SELECT DISTINCT paroid, partbl FROM omap WHERE omap.chiloid IN ( ` + oidsStr +  ` )`
-    fmt.Println("L64: sqlStr=", sqlStr)
+    //fmt.Println("L64: sqlStr=", sqlStr)
     sqlStart := time.Now()
     rows, err := db.Query(sqlStr)
     sqlExecElap := time.Since(sqlStart)
     sqlIterStart:= time.Now()
     CheckError(err)
     //fmt.Println("L66: err=", err)
-    rows.Close()
     w.WriteHeader(http.StatusOK)
     cnt := 0;
     for rows.Next() {
        var paroid, partbl string       
-       err = rows.Scan(&paroid, &partbl)
+       err = rows.Scan(&paroid, &partbl)       
        CheckError(err)
+       if (err != nil) {
+           break
+       }
        //fmt.Println("parId=", paroid, partbl)
        fmt.Fprintf(w, "%s,%s\n", partbl, paroid)
        cnt ++;
     }
+    rows.Close()
     if cnt < 1 {
       fmt.Fprintf(w, "--ERROR NO RECORDS MATCHED\n")
     }
