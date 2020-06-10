@@ -162,3 +162,8 @@ go/bin/*
 *kate-swp*
 *postgresql-*.jar
 *.RESULT.txt
+*enroll.zip
+data/private
+data/private/*
+*nohup*
+generated_oids.map.txt
