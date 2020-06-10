@@ -36,17 +36,22 @@ def processFile(fname, fout):
      
 
 # MAIN
-if len(sys.argv) < 2:
-    raise ValueError('Please provide source file name')
+def printMsg(): {
+  print("Usage:  python generateSimpleQueries.py inFiName outFiName")
+}
 
-fout = open("data/stage/db_simple_queries.sql", "w")
+if len(sys.argv) < 3:
+    printMsg()
+    raise ValueError('Please provide source file name')
+foutName = sys.argv[2]
+fout = open(foutName, "w")
 fout.write("\\c oidmap\n\o data/log/simple_query.RESULTS.txt\n")
-fnames = sys.argv[1:]
-print ('fnames=', fnames)
-for fname in fnames:
-    if not os.path.isfile(fname):
-        raise ValueError("Could not find file " + str(fname))
-    processFile(fname, fout)
+fnameIn = sys.argv[1]
+print ('inFiName=", fnameIn, "outFiName=", foutName) 
+if not os.path.isfile(fnameIn):
+  printMsg()
+  raise ValueError("Could not find file " + str(fnameIn))
+processFile(fnameIn, fout)
                         
 
 

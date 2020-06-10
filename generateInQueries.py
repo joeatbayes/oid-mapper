@@ -48,19 +48,23 @@ def processFile(fname, fout):
      else: 
          break
      
+def printMsg(): {
+  print("Usage:  python generateInQueries.py inFiName outFiName")
+}     
 
 # MAIN
-if len(sys.argv) < 2:
-    raise ValueError('Please provide source file name')
+if len(sys.argv) < 3:
+    raise ValueError('not enough parameters')
 
-fout = open("data/stage/db_in_queries.sql", "w")
+foutName = sys.argv[2]
+fout = open(foutName, "w")
 fout.write("\\c oidmap\n\o data/log/in_query.RESULTS.txt\n")
-fnames = sys.argv[1:]
-print ('fnames=', fnames)
-for fname in fnames:
-    if not os.path.isfile(fname):
-        raise ValueError("Could not find file " + str(fname))
-    processFile(fname, fout)
+fnameIn = sys.argv[1]
+print ("fnameIn=", fnameIn, "foutName=", foutName)
+if not os.path.isfile(fnameIn):
+    printMsg()
+    raise ValueError("Could not find file " + str(fnameIn))
+processFile(fnameIn, fout)
                         
 
 

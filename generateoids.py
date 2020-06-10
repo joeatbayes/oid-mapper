@@ -6,7 +6,10 @@ Tested with Python 3.8
 
 import uuid
 import random
-targetRows=300000000 # Minimum # rows to generate if targetOverlap always resolves to 1.
+import sys
+import os
+
+
 targetOverlap=5
 master = ["person","person", "person", "company"]
 # person repeated to cause it higher incidence in output file
@@ -15,7 +18,19 @@ children = ["address", "contact", "call", "complain"]
 maxMaster = len(master) - 1
 maxChild  = len(children) - 1
 
-f = open("data/stage/generated_oids.map.txt", "w")
+def printMsg(): {
+  print("Usage:  python generateoids.py numMastRec outFiName")
+}
+
+if len(sys.argv) < 3:
+    printMsg()
+    raise ValueError('Please provide proper input not enough parameters')
+
+foutName = sys.argv[2]
+targetRows =     
+
+
+f = open(foutName, "w")
 f.write("view_name,tview_oid,source_name,source_oid\n")
 
 # Update the file with a bunch of master 

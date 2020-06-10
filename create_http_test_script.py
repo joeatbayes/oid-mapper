@@ -48,15 +48,20 @@ def processFile(fname, fout):
      else: 
          break
      
+def printMsg(): {
+  print("Usage:  python create_http_test_script.py inFiName outFiName")
+}   
 
 # MAIN
 if len(sys.argv) < 2:
+    printMsg()
     raise ValueError('Please provide source file name')
 fnameIn = sys.argv[1]
 fnameOut = sys.argv[2]
 fout = open(fnameOut, "w")
 if not os.path.isfile(fnameIn):
-        raise ValueError("Could not find file " + str(fnameIn))
+   printMsg()
+   raise ValueError("Could not find file " + str(fnameIn))
 processFile(fnameIn, fout)
                         
 

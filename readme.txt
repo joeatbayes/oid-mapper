@@ -66,8 +66,7 @@ Create the database, table, index for the mapping file
 
 Generate sample oids mapping file:
   when in bash
-  python generateoids.py
-  # creates a file data/stage/generated_oids.map.txt 
+  python generateoids.py 30000000 data/stage/generated_oids.map.txt 
   # that has a number of synthetically
   # generated oids.  This file will consume about 
   # 2.7 Gig of storage space. You can reduce this by changing 
@@ -77,26 +76,26 @@ Generate sample oids mapping file:
   # *1 - 
   # *2 - 12m8.459s
   # *3 - 05m24.9s
-  # *3L- 4h:20m:26sec
+  # *3L- 4h:20m:26sec  generated_oids.map.txt is 75G
   
 Convert the oids file data file into a SQL command file to feed into postgress
-  python create_db_load.py data/stage/generated_oids.map.txt
-  # replace test.map.txt with a list of your input files.
-  # it will generate a file named data/stage/db_load.sql
+  python create_db_load.py data/stage/generated_oids.map.txt data/stage/db_load.sql
+  # replace test.map.txt with your input file. 
+  # it will generate a file named in second parameter
   # this file will be slightly larger than the 
   # sum of the data passed in the list of input files.
   # *1 -201 seconds for 29.9 million 
   # records.
   # *2 - 1m9.7s - 69 seconds
   # *3 - 0m44s 
-  # *3L- 21m:43.87s 
+  # *3L- 21m:43.87s - db_load.sql is 84G
   
   
 Load Postgress with the oids data 
-  psql -f db_load.sql
+  psql -f data/stage/db_load.sql
   # On linux use time psql -f data/stage/db_load.sql 
   # to measure how long it takes. 
-  # generates a file db_load.RESULT.txt
+  # generates a file data/log/db_load.RESULT.txt
   # On windows you can use time command
   # by running a bash and then executing the 
   # same command you would on linux.  
@@ -111,17 +110,17 @@ Load Postgress with the oids data
   #       With modified postgress config shown below.
   # *3  - 9m14s
   # *3L - 25h:08m:20s - 899,993,602 / ((25*60*60)+(8*60)+20)
-  #       9,944 records per second. 
+  #       9,944 records per second.  Postgress Data usage 
+  #       after inserts 189G.
   
   
 Generate the file containing queries to test obtaining the distinct 
 parent oid, and table for every chiold oid in the system. 
   #When in bash shell.
-  time python generateSimpleQueries.py data/stage/generated_oids.map.txt
+  time python generateSimpleQueries.py data/stage/generated_oids.map.txt data/stage/db_simple_queries.sql
   # *1-On my laptop this took   266 seconds or about
   #   112,406 per second.
   #*2-
-  # It generates the file data/stage/db_simple_queries.sql
   # *3 - 0m37.1s
   
 Run the query to select the parent oid and table for
@@ -139,8 +138,7 @@ every child oid and table in the input data.
 Generate sql file to Query for the parents for every child OID in 
 the system using the IN clause.   
   # when in bash
-  python generateInQueries.py data/stage/generated_oids.map.txt
-  # generates a file data/stage/db_in_queries.sql
+  python generateInQueries.py data/stage/generated_oids.map.txt data/stage/db_in_queries.sql
   # *1- 107 seconds to generate for 29.99 million rows. 
   # *2- 0m37.944s = 
   # *3- 0m26.5s
@@ -149,13 +147,13 @@ the system using the IN clause.
 Run the query to select the parents for every child OID in the input
 file. 
    # when in bash  
-   time psql -f db_in_queries.sql 
-   # this generates a file in_data/log/query.RESULTS.txt 
+   time psql -f data/stage/db_in_queries.sql 
+   # this generates a file in data/log/query.RESULTS.txt 
    # *1-  20min23.26sec or 1220 seconds to run for 29.99 million 
    #       child oids or about 0.0408 ms per child oid lookup.
    # *2-  8m18s or (((8*60)+18)*1000)/29900000 = 0.0167ms per oid lookup
    # *3-  5m7s or (((5*60)+7)*1000)/29900000 = 0.0103ms per oid lookup
-   
+
    
    
 #############
@@ -591,3 +589,21 @@ java InQueryFile
         !/data Full 
         !/data2 Full 
      Run update-aide.conf
+
+
+
+
+########################
+### Modifications specifically for data from TST
+########################
+cd /data2/oidmap
+python create_db_load.py ~/sub_enroll.data
+# *4 - 21.2 Sec
+
+time psql -f data/stage/db_load.sql
+ 
+ 
+time python generateInQueries.py data/stage/generated_oids.map.txt data/stage/db_in_queries.sql
+time python generateSimpleQueries.py data/stage/generated_oids.map.txt data/stage/db_simple_queries.sql
+time python create_http_test_script.py ~/sub_enroll.data  data/stage/http-test-file.txt
+time go/bin/httpTest -MaxThread=1 -in=../data/stage/http-test-file.txt > t.t
