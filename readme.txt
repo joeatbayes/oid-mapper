@@ -571,19 +571,15 @@ javac InQueryFile.java
 java InQueryFile
 
 
-
-
-# TODO:   GoLang and Java Samples need to pull
-#   User from the local user name to allow proper execution
-#
 # Execute the GoLang & Java Samples from
 # Above
 
 # Execute the Java Samples from Above
 
 
-
-
+######
+## Additonal Settings taht may be needed for some servers
+######
 # Modify Linux limits to allow more open files
   sudo vi /etc/security/limits.conf
   # add the following lines
@@ -619,7 +615,8 @@ java InQueryFile
 ### Modifications specifically for data from TST
 ########################
 cd /data2/oidmap
-python create_db_load.py ~/sub_enroll.data
+python create_db_load.py ~/sub_enroll.data data/state/db_load.sql
+  # Assumes the input data is at ~/sub_enroll.data
 # *4 - 21.2 Sec
 
 time psql -f data/stage/db_load.sql
