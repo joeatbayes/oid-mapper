@@ -1,4 +1,11 @@
-oid mapper demonstration
+oid mapper
+----------------------------
+Provides a high speed way of looking up the parent objects or views when a
+fine grained child table s changed. he thought process is that we can leverage
+the logic the top down walk based on foreign keys to walk the data hierarchy 
+in a efficient way using our existing indexes.  With this ability we can use 
+DB Audit functionality to identify every table record change and determine 
+which views need to be re-published because they contain data from that table. 
 
 Problem statement:
 
@@ -34,6 +41,11 @@ object then a change to a single address may affect the JSON serialized
 view of multiple people or companies located at the same address.  When 
 the adress changes we need to find the all people and all the companies 
 located at that address and re-publsih a changed view. 
+
+
+Note: We still needs a way to identify new records in the composite child views 
+but I think we can tell from the audit tables new records versus changed records 
+which should make it possible to run a separate population process at that time. 
 
 When running python on ubuntu then you must use python3 rather than python 
 since that is what I tested the python scripts in. 
