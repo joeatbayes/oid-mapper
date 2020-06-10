@@ -591,6 +591,9 @@ java InQueryFile
      Run update-aide.conf
 
 
+# Ask the VM Admin to allow access on port 9832
+
+
 
 
 ########################
@@ -601,9 +604,19 @@ python create_db_load.py ~/sub_enroll.data
 # *4 - 21.2 Sec
 
 time psql -f data/stage/db_load.sql
- 
+# *4 - 7m41s 
  
 time python generateInQueries.py data/stage/generated_oids.map.txt data/stage/db_in_queries.sql
+
+# Do Not need this if testing http server access
 time python generateSimpleQueries.py data/stage/generated_oids.map.txt data/stage/db_simple_queries.sql
-time python create_http_test_script.py ~/sub_enroll.data  data/stage/http-test-file.txt
-time go/bin/httpTest -MaxThread=1 -in=../data/stage/http-test-file.txt > t.t
+
+# Do Not need this if testing http server access
+time python create_http_test_script.py ~/sub_enroll.dat  ~/sub_enroll.http-test.txt
+#  *4 - 14.68s
+
+head $HOME/sub_enroll.http-test.txt
+
+time go/bin/httpTest -MaxThread=1 -in=$HOME/sub_enroll.http-test.txt > t.t
+
+
