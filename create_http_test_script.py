@@ -48,9 +48,9 @@ def processFile(fname, fout):
      else: 
          break
      
-def printMsg(): {
+def printMsg(): 
   print("Usage:  python create_http_test_script.py inFiName outFiName")
-}   
+   
 
 # MAIN
 if len(sys.argv) < 2:
