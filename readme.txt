@@ -293,7 +293,8 @@ time bin/httpTest -MaxThread=600 -in=../data/stage/http-test-file.txt > t.t
   # *3 = 1m5.2s - (((1*60)+5.2)*1000)/29900000= 0.00218ms per oid
 
 
-# Note: When I tested with 750 connections I got errors in the server too many open #   files.   After further experimentation I found that it worked fine with 400 
+# Note: When I tested with 750 connections I got errors in the server too many open 
+#   files.   After further experimentation I found that it worked fine with 400 
 #   MaxThread and fails at 450. I could bump this up by modifyng the 
 #   linux limits but it is already CPU starved so would provide little
 #   benefit.  The server does recover as soon as excess requests stop 
