@@ -68,6 +68,10 @@ They assume that you are on linux or have cygwin bash installed.
      by pgtune. 
 *3L- Same Super Micro as *3 but with 899,993,602 records
 
+
+############
+## Basic Setup
+############
      
 git clone https://github.com/joeatbayes/oid-mapper.git oidmap
 
@@ -85,6 +89,8 @@ Generate sample oids mapping file:
   # targetRows variable in generateoids.py  This generates some
   # combitorial records for many children composing a single master
   # the total number is random but on my test it actually produced 
+  # This step can be skipped when real data of the same format is
+  # available. 
   # *1 - 
   # *2 - 12m8.459s
   # *3 - 05m24.9s
@@ -239,7 +245,7 @@ export PGPASS=SomePassword
 go get -u -t "github.com/joeatbayes/http-stress-test/httpTest"
 
 # Produce the test script for httpTester to exercise ther server
-python ../create_http_test_script.py ../data/stage/test.map.txt data/log/http-test-file.txt
+python ../create_http_test_script.py ../data/stage/test.map.txt data/stage/http-test-file.txt
 
 # Single threaded test against server
 time bin/httpTest -MaxThread=1 -in=../data/stage/http-test-file.txt > t.t
