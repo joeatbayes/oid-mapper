@@ -39,8 +39,8 @@ def processFile(fname, fout):
 if len(sys.argv) < 2:
     raise ValueError('Please provide source file name')
 
-fout = open("db_simple_queries.sql", "w")
-fout.write("\\c oidmap\n\o simple_query.RESULTS.txt\n")
+fout = open("data/stage/db_simple_queries.sql", "w")
+fout.write("\\c oidmap\n\o data/log/simple_query.RESULTS.txt\n")
 fnames = sys.argv[1:]
 print ('fnames=', fnames)
 for fname in fnames:

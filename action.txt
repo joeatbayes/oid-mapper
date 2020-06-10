@@ -1,6 +1,17 @@
-python script generating db load does not seem to be including last oids shown in input file. 
+Modify the bulk SQL create script to drop the primary ndx and then re-add it after the insert is complete.
+Modify the bulk SQL to set autocomplete to false.
+Modify inQueryFile.java to read input and output file from command line. 
+Modify create_db_load.py to read output file name from command line
+Modify generateSimpleQueries.py to read output file name from command line
+Modify generateInQueries.py to read output file name from command line
+Modify generateSimpleQueries.py to read output file name from command line
+Create a script that provides a base name of input that runs all phases with the generate oids as simple
+Create a queue based file diretory where we read files in time sequence of when created. create new SQL statements and then records the last name of file processed.  Organize this as one directory per day so we do not accumulate more files than healthy in single directory.  Records last file 
 
-httpServer seems to slow down after 2 threads. I think we are 
+
+DONE:JOE:2020-06-09: python script generating db load does not seem to be including last oids shown in input file. 
+
+DONE:JOE:2020-06-09: httpServer seems to slow down after 2 threads. I think we are 
    hitting it from the client without blocking so I thnk something 
    is blocking in the postgress client side connection manager 
    becauseuase postgress cpu usage actually drops when hitting it harder.

@@ -6,7 +6,7 @@ Tested with Python 3.8
 
 import uuid
 import random
-targetRows=10000000 # Minimum # rows to generate if targetOverlap always resolves to 1.
+targetRows=300000000 # Minimum # rows to generate if targetOverlap always resolves to 1.
 targetOverlap=5
 master = ["person","person", "person", "company"]
 # person repeated to cause it higher incidence in output file
@@ -15,8 +15,8 @@ children = ["address", "contact", "call", "complain"]
 maxMaster = len(master) - 1
 maxChild  = len(children) - 1
 
-f = open("test.map.txt", "w")
-f.write("view_name\tview_oid\tsource_name\tsource_oid\n")
+f = open("data/stage/generated_oids.map.txt", "w")
+f.write("view_name,tview_oid,source_name,source_oid\n")
 
 # Update the file with a bunch of master 
 # reocords that have a randomized number

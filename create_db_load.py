@@ -46,7 +46,7 @@ def processFile(fname, fout):
 if len(sys.argv) < 2:
     raise ValueError('Please provide source file name')
 
-fout = open("db_load.sql", "w")
+fout = open("data/stage/db_load.sql", "w")
 fout.write("\\c oidmap\n\o db_load.RESULT.txt\n")
 fnames = sys.argv[1:]
 print ('fnames=', fnames)

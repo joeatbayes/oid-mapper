@@ -61,7 +61,7 @@ public class InQueryFile {
          c.setAutoCommit(false);
          System.out.println("Opened database successfully");
          stmt = c.createStatement();
-         FileInputStream fis=new FileInputStream("../test.map.txt");
+         FileInputStream fis=new FileInputStream("../data/stage/test.map.txt");
          Scanner sc=new Scanner(fis); 
          sc.nextLine(); // skip header line
          while(sc.hasNextLine())  
