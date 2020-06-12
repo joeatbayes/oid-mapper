@@ -135,6 +135,7 @@ Load Postgress with the oids data
   # *3L - 25h:08m:20s - 899,993,602 / ((25*60*60)+(8*60)+20)
   #       9,944 records per second.  Postgress Data usage 
   #       after inserts 189G.
+  #  *4 - 28m16s - 90,007,790 / ((28*60) + 16) - 53,070 rec per sec
   
   
 Generate the file containing queries to test obtaining the distinct 
@@ -159,6 +160,8 @@ every child oid and table in the input data.
   # *2-   60m26s - (((60*60)+26)*1000)/29900000 = 0.12ms per oid
   # *3-   60m26s - (((60*60)+26)*1000)/29900000 = 0.12ms per oid
   # *4-
+  # A version to run in background for large files 
+  # nohup $(time psql -f $PWD/data/stage/generated_oids.lg.map.txt > $PWD/dbload.time.txt)
   
 
 Generate sql file to Query for the parents for every child OID in 
@@ -287,6 +290,7 @@ time bin/httpTest -MaxThread=75 -in=../data/stage/http-test-file.txt > t.t
          tons of postgres processes consuming relatively
          small amounts.  
  # *3 = 1m31s - (((1*60)+31)*1000)/29900000= 0.003ms per oid
+ # *4 = 3m54s - (((3*60)+54)*1000)/90,007,790 = 0.0026ms per oid
  
 # Stress Test Load abuse
 time bin/httpTest -MaxThread=250 -in=../data/stage/http-test-file.txt > t.t
@@ -311,8 +315,18 @@ time bin/httpTest -MaxThread=600 -in=../data/stage/http-test-file.txt > t.t
 #   MaxThread and fails at 450. I could bump this up by modifyng the 
 #   linux limits but it is already CPU starved so would provide little
 #   benefit.  The server does recover as soon as excess requests stop 
-#   being made.
+#   being made.  Worked fine up through 1,000 connections on rhel-7.
 
+
+
+# Generate roughly a 1 billion record sample input data set. 
+# and send timing results to time.txt.  This special syntax was required
+# due to rhel differents loosing current path when running 
+# in nohup.
+  nohup $(time python $PWD/generateoids.py 330000000 $PWD/data/stage/generated_oids.lg.map.txt > $PWD/time.txt)
+ 
+.
+.
   
 ###############
 ### FOR JAVA TESTS
