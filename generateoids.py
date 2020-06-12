@@ -32,7 +32,7 @@ targetRows =  int(sys.argv[1])
 
 f = open(foutName, "w")
 f.write("view_name,tview_oid,source_name,source_oid\n")
-
+print ("foutName=", foutName, " targetRows=", targetRows)
 # Update the file with a bunch of master 
 # reocords that have a randomized number
 # of child records that coud update them. 

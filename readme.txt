@@ -99,9 +99,12 @@ Generate sample oids mapping file:
   # *3 - 05m24.9s
   # *3L- 4h:20m:26sec  generated_oids.map.txt is 75G
   # *4 - 52m45s - db load 7.5G with 90,007,790 recs
+  #
+  # To generate roughly 1 billion records 
+  nohup time -o time.generateoids.340m.txt python $PWD/generateoids.py 343000000 $PWD/data/stage/generated_oids.340m.map.txt
   
 Convert the oids file data file into a SQL command file to feed into postgress
-  python create_db_load.py data/stage/generated_oids.map.txt data/stage/db_load.sql
+  time python create_db_load.py data/stage/generated_oids.map.txt data/stage/db_load.sql
   # replace test.map.txt with your input file. 
   # it will generate a file named in second parameter
   # this file will be slightly larger than the 
@@ -111,11 +114,14 @@ Convert the oids file data file into a SQL command file to feed into postgress
   # *2 - 1m9.7s - 69 seconds = 43.3K per sec
   # *3 - 0m44s - 747K per sec
   # *3L- 21m:43.87s - db_load.sql is 84G
-  # *4 - 2m47s - db load 7.5G = 179K per sec
+  # *4 - 2m47s - db load 7.5G  file with 90,007,790 recs = 179K per sec
+  #
+  # To generate SQL to Load the aprox 1 billion records 
+  nohup time -o time.create_db.340m.txt python create_db_load.py data/stage/generated_oids.340m.map.txt data/stage/db_load.340m.sql
   
   
 Load Postgress with the oids data 
-  psql -U test -f data/stage/db_load.sql
+  time psql -U test -f data/stage/db_load.sql
   # On linux use time psql -f data/stage/db_load.sql 
   # to measure how long it takes. 
   # generates a file data/log/db_load.RESULT.txt
@@ -136,6 +142,9 @@ Load Postgress with the oids data
   #       9,944 records per second.  Postgress Data usage 
   #       after inserts 189G.
   #  *4 - 28m16s - 90,007,790 / ((28*60) + 16) - 53,070 rec per sec
+  # 
+  # To load roughly 1B records into the datbase
+  nohup time -o time.load_db.340m.txt psql -U test -f data/stage/db_load.340m.sql
   
   
 Generate the file containing queries to test obtaining the distinct 
@@ -187,9 +196,15 @@ file.
 
 # Produce the test script for httpTester to exercise ther server
   time python create_http_test_script.py data/stage/generated_oids.map.txt data/stage/http-test-file.txt
-
   # *4 - 1m54.37s - 789.5K per sec
 
+  # Produce test script for roughly 1B records
+  nohup time -o time.create_http_test.340m.txt python create_http_test_script.py data/stage/generated_oids.map.340m.txt data/stage/http-test-file.340m.txt
+
+
+ 
+ 
+   
    
 #############
 ## FOR GOLANG TESTS
@@ -319,14 +334,6 @@ time bin/httpTest -MaxThread=600 -in=../data/stage/http-test-file.txt > t.t
 
 
 
-# Generate roughly a 1 billion record sample input data set. 
-# and send timing results to time.txt.  This special syntax was required
-# due to rhel differents loosing current path when running 
-# in nohup.
-  nohup $(time python $PWD/generateoids.py 330000000 $PWD/data/stage/generated_oids.lg.map.txt > $PWD/time.txt)
- 
-.
-.
   
 ###############
 ### FOR JAVA TESTS
@@ -642,6 +649,7 @@ java InQueryFile
 ####################
 sudo yum check-update
 sudo yum update
+sudo yum install time.x86_64
 sudo yum install vim
 sudo yum install git
 sudo yum install java-latest-openjdk.x86_64
@@ -774,6 +782,13 @@ cd /data3/oidmap
 # Execute the statements starting with 
 # the create_db.sql under the section
 # basic setup above
+
+
+##################
+## Allow longer timeout on idle SSH sessions
+##################
+To $HOME/.bashrc add the following line
+TMOUT=9000
 
 
 ##################

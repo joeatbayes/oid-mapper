@@ -103,8 +103,8 @@ func bdInit() {
     // check db
     err = db.Ping()
     CheckError(err)
-    db.SetMaxIdleConns(50)
-    db.SetMaxOpenConns(50)
+    db.SetMaxIdleConns(100)
+    db.SetMaxOpenConns(100)
     getConElap := time.Since(getConStart)
     fmt.Println("Get DB Connection ", psqlconn, " elap=", getConElap)
 }
