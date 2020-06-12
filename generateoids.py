@@ -18,9 +18,9 @@ children = ["address", "contact", "call", "complain"]
 maxMaster = len(master) - 1
 maxChild  = len(children) - 1
 
-def printMsg(): {
+def printMsg(): 
   print("Usage:  python generateoids.py numMastRec outFiName")
-}
+
 
 if len(sys.argv) < 3:
     printMsg()

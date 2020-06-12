@@ -41,25 +41,25 @@ def processFile(fname, fout):
      else: 
          break
 
-def printMsg(): {
+def printMsg(): 
   print("Usage:  python create_db_load.py inFiName outFiName")
-}
+
 
 # MAIN
 if len(sys.argv) < 3:
     printMsg()
     raise ValueError('Please provide source file name')
     
-fnameIn = sys.argv[1:]
+fnameIn = sys.argv[1]
 fnameOut = sys.argv[2]
 fout = open(fnameOut, "w")
 fout.write("\\c oidmap\n\o db_load.RESULT.txt\n")
 
-print ('fnameIn=", fnameIn, " fnameOut=', fnameOut)
+print ("fnameIn=", fnameIn, " fnameOut=", fnameOut)
 if not os.path.isfile(fnameIn):
    printMsg()
    raise ValueError("Could not find file " + str(fnameIn))
- processFile(fnameIn, fout)
+processFile(fnameIn, fout)
                         
 
 

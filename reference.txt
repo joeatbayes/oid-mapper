@@ -53,3 +53,6 @@ Sample Docker File to create docker image for postgress https://severalnines.com
 Sample Java HTTP Server without downloading Tomcat.  Very small and should be easy to use.  - https://stackoverflow.com/questions/3732109/simple-http-server-in-java-using-only-java-se-api 
 
 Claims to deliver 10X faster server in GO - https://husobee.github.io/golang/fasthttp/2016/06/23/golang-fasthttp.html
+
+https://www.postgresql.org/docs/12/server-start.html
+

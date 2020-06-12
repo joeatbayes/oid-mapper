@@ -67,6 +67,9 @@ They assume that you are on linux or have cygwin bash installed.
      drive speed...   With config changed recomended
      by pgtune. 
 *3L- Same Super Micro as *3 but with 899,993,602 records
+*4 - Super micro with fast NVME bare metal RHEL-7 40 core
+     768GB Ram.
+     
 
 
 ############
@@ -95,6 +98,7 @@ Generate sample oids mapping file:
   # *2 - 12m8.459s
   # *3 - 05m24.9s
   # *3L- 4h:20m:26sec  generated_oids.map.txt is 75G
+  # *4 - 52m45s - db load 7.5G with 90,007,790 recs
   
 Convert the oids file data file into a SQL command file to feed into postgress
   python create_db_load.py data/stage/generated_oids.map.txt data/stage/db_load.sql
@@ -102,15 +106,16 @@ Convert the oids file data file into a SQL command file to feed into postgress
   # it will generate a file named in second parameter
   # this file will be slightly larger than the 
   # sum of the data passed in the list of input files.
-  # *1 -201 seconds for 29.9 million 
+  # *1 -201 seconds for 29.9 million rec = 148.8K per sec
   # records.
-  # *2 - 1m9.7s - 69 seconds
-  # *3 - 0m44s 
+  # *2 - 1m9.7s - 69 seconds = 43.3K per sec
+  # *3 - 0m44s - 747K per sec
   # *3L- 21m:43.87s - db_load.sql is 84G
+  # *4 - 2m47s - db load 7.5G = 179K per sec
   
   
 Load Postgress with the oids data 
-  psql -f data/stage/db_load.sql
+  psql -U test -f data/stage/db_load.sql
   # On linux use time psql -f data/stage/db_load.sql 
   # to measure how long it takes. 
   # generates a file data/log/db_load.RESULT.txt
@@ -139,7 +144,9 @@ parent oid, and table for every chiold oid in the system.
   # *1-On my laptop this took   266 seconds or about
   #   112,406 per second.
   #*2-
-  # *3 - 0m37.1s
+  # *3 - 0m37.1s = 808K per sec
+  # *4 - 2m15s  = 666.7K per sec
+  
   
 Run the query to select the parent oid and table for
 every child oid and table in the input data.
@@ -151,6 +158,7 @@ every child oid and table in the input data.
   #      or about ... milli-seconds per query.
   # *2-   60m26s - (((60*60)+26)*1000)/29900000 = 0.12ms per oid
   # *3-   60m26s - (((60*60)+26)*1000)/29900000 = 0.12ms per oid
+  # *4-
   
 
 Generate sql file to Query for the parents for every child OID in 
@@ -158,8 +166,9 @@ the system using the IN clause.
   # when in bash
   python generateInQueries.py data/stage/generated_oids.map.txt data/stage/db_in_queries.sql
   # *1- 107 seconds to generate for 29.99 million rows. 
-  # *2- 0m37.944s = 
-  # *3- 0m26.5s
+  # *2- 0m37.944s = 788.9K per sec
+  # *3- 0m26.5s1128.3K per sec
+  # *4- 1m39S = 909.2K per sec
   
 
 Run the query to select the parents for every child OID in the input
@@ -171,8 +180,13 @@ file.
    #       child oids or about 0.0408 ms per child oid lookup.
    # *2-  8m18s or (((8*60)+18)*1000)/29900000 = 0.0167ms per oid lookup
    # *3-  5m7s or (((5*60)+7)*1000)/29900000 = 0.0103ms per oid lookup
+   # *4- 
 
-   
+# Produce the test script for httpTester to exercise ther server
+  time python create_http_test_script.py data/stage/generated_oids.map.txt data/stage/http-test-file.txt
+
+  # *4 - 1m54.37s - 789.5K per sec
+
    
 #############
 ## FOR GOLANG TESTS
@@ -244,8 +258,7 @@ export PGPASS=SomePassword
 # Download the http stress tester tool
 go get -u -t "github.com/joeatbayes/http-stress-test/httpTest"
 
-# Produce the test script for httpTester to exercise ther server
-python ../create_http_test_script.py ../data/stage/test.map.txt data/stage/http-test-file.txt
+
 
 # Single threaded test against server
 time bin/httpTest -MaxThread=1 -in=../data/stage/http-test-file.txt > t.t
@@ -607,6 +620,164 @@ java InQueryFile
 
 
 # Ask the VM Admin to allow access on port 9832
+
+
+
+####################
+### Configure RHEL Box with Bare Metal Postgressql
+####################
+sudo yum check-update
+sudo yum update
+sudo yum install vim
+sudo yum install git
+sudo yum install java-latest-openjdk.x86_64
+sudo yum install docker-client-latest.x86_64
+sudo yum install postgresql-jdbc.noarch 
+  #  On my system this install postgres 9.5 If you want a 
+  #  newer version see # https://linuxize.com/post/how-to-install-postgresql-on-centos-7/ 
+  #  and https://pgdash.io/blog/postgres-11-getting-started.html
+
+sudo yum install golang-vim.noarch golang.x86_64 
+# NOTE: Golanguage 1.13 was already installed on my test box 
+
+#####
+## When the yum install can not work 
+## packages can be installed directly
+#####
+# Remove old versions of postgress: 
+#   sudo yum remove  postgresql.x86_64 postgresql-contrib.x86_64 postgre postgresql-server.x86_64 pg_top.x86_64 pg_view.noarch pgadmin3.x86_64
+# From https://yum.postgresql.org/12/redhat/rhel-7-x86_64/repoview/
+#  download version 12.3 rpm files for 
+#   postgresql12-12.3-1PGDG.rhel7
+#   postgresql12-libs-12.3-1PGDG.rhel7
+#   postgresql12-server-12.3-1PGDG.rhel7
+#   postgresql12-contrib-12.3-1PGDG.rhel7
+#  And from https://yum.postgresql.org/12/redhat/rhel-7-x86_64/repoview/postgresql12.html
+#   download the psql cleint 
+#     postgresql12-12.3-1PGDG.rhel7.x86_64 
+#   And transfer them to linux server 
+ sudo rpm -i postgresql12-libs-12.3-1PGDG.rhel7.x86_64.rpm
+ sudo rpm -i postgresql12-12.3-1PGDG.rhel7.x86_64.rpm
+ sudo rpm -i postgresql12-server-12.3-1PGDG.rhel7.x86_64.rpm
+ sudo rpm -i postgresql12-contrib-12.3-1PGDG.rhel7.x86_64.rpm
+Install Direcory is /usr/pgsql-12
+sudo mkdir /data2/pg12data
+sudo chown jellsworth:games /data2/pg12data
+# initdb command explained https://www.postgresql.org/docs/12/app-initdb.html
+/usr/pgsql-12/bin/initdb -D /data2/pg12data
+sudo chmod a+rw /var/run/postgresql
+/usr/pgsql-12/bin/pg_ctl -D /data2/pg12data -l logfile2 start
+/usr/pgsql-12/bin/createdb jellsworth 
+# createdb explained: https://www.postgresql.org/docs/12/app-createdb.html
+
+psql -c "SELECT version();"
+  # Should show the Database version which should be 12.3
+psql -c "CREATE ROLE test WITH LOGIN CREATEDB ENCRYPTED PASSWORD 'test';"
+
+psql -c "CREATE DATABASE test WITH OWNER test;"
+
+# The Postgress config values are placed in the 
+# named data directory used above.  In this instance
+# They are /data2/pg12data/
+
+
+# Edit the file /data2/pg12data/pg_hba.conf
+   vi /data2/pg12data/pg_hba.conf
+   # Add the following lines before the line that defines
+   # local all so it looks like 
+   local   all             test                                    md5
+   local   all             all                                     trust
+
+
+# Now we must enable network listener.
+# Edit file vi /data2/pg12data/postgresql.conf
+#  vi /data2/pg12data/postgresql.conf
+#  Uncomment this line to allow java to connect
+   # listen_addresses = 'localhost'   
+# to  the following by removing the leading #
+   listen_addresses = 'localhost'   
+#  Uncomment the line 
+# port = 5432
+
+# Restart the server # https://www.postgresql.org/docs/12/app-pg-ctl.html
+/usr/pgsql-12/bin/pg_ctl -D /data2/pg12data -l logfile2 restart
+
+# Check to see if Postgres is actually listening on the portion
+sudo netstat -plnt
+  # You should see Postgres listening on port 5432
+  
+# Check Most recent logs in  /data2/pg12data/logto determine any 
+# problem in startup.
+
+
+# TEST that you can access the DB as local user
+  psql -c "SELECT version();"
+  # Should see a string showing the postgres version
+
+# Test that you can access the DB as test user
+  psql -U test -c "SELECT version();"
+  # Should see a string showing the postgres version
+
+# Use PGTune to generate new config settings for your machine
+# modify postgresql.conf with the setting you generated.  Here is 
+# what it generated for my machine. Update the file with the 
+# following settings.  Some may be commented out initially
+vi /data2/pg12data/postgresql.conf
+
+# Update the file Joe reduced some of these settings 
+# because it was pegging the system .
+# during the database load.
+max_connections = 100
+shared_buffers = 100GB
+effective_cache_size = 300GB
+maintenance_work_mem = 2GB
+checkpoint_completion_target = 0.9
+wal_buffers = 16MB
+default_statistics_target = 100
+random_page_cost = 1.1
+effective_io_concurrency = 200
+work_mem = 128MB
+min_wal_size = 1GB
+max_wal_size = 4GB
+max_worker_processes = 35
+max_parallel_workers_per_gather = 4
+max_parallel_workers = 35
+max_parallel_maintenance_workers = 4
+
+# Restart server after edits
+/usr/pgsql-12/bin/pg_ctl -D /data2/pg12data -l logfile2 restart
+
+# Create the oidmap database
+psql -U test -f create_db.sql
+
+# Assuming /data3 is a high speed storage 
+# where you want to keep transient data 
+# during the test
+sudo mv oidmap /data3/oidmap
+cd /data3/oidmap
+
+
+# Execute the statements starting with 
+# the create_db.sql under the section
+# basic setup above
+
+
+##################
+## Setup JDBC Driver for Postgres
+##################
+cd oidmap/java
+wget https://jdbc.postgresql.org/download/postgresql-42.2.13.jar
+# Add oidmap/java/postgresql-42.2.13.jar to java class path
+# by editing ~/.profile and adding the the line
+sudo vi ~/.profile
+# Add the line
+export CLASSPATH=~/oidmap/java/postgresql-42.2.13.jar:$CLASSPATH
+#activate new setting in current terminal
+source ~/.profile
+# ensure the environment variables PGUSER and PGPASS are set.
+# to reflect what you have configured for postgres.
+javac InQueryFile.java
+java InQueryFile
 
 
 

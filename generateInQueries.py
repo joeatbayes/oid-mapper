@@ -48,9 +48,9 @@ def processFile(fname, fout):
      else: 
          break
      
-def printMsg(): {
+def printMsg(): 
   print("Usage:  python generateInQueries.py inFiName outFiName")
-}     
+
 
 # MAIN
 if len(sys.argv) < 3:
