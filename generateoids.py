@@ -27,7 +27,7 @@ if len(sys.argv) < 3:
     raise ValueError('Please provide proper input not enough parameters')
 
 foutName = sys.argv[2]
-targetRows =     
+targetRows =  int(sys.argv[1])
 
 
 f = open(foutName, "w")
@@ -36,7 +36,9 @@ f.write("view_name,tview_oid,source_name,source_oid\n")
 # Update the file with a bunch of master 
 # reocords that have a randomized number
 # of child records that coud update them. 
-for rowndx in range(0, targetRows):
+cnt = 0
+while cnt <  targetRows:
+  cnt += 1
   numover = random.randint(1,targetOverlap)
   moid = str(uuid.uuid4())
   mtbl = master[random.randint(0,maxMaster)]
