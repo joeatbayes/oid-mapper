@@ -60,15 +60,20 @@ They assume that you are on linux or have cygwin bash installed.
 # Machine Configs
 ####
 *1 - Basic Tests ran on Dell laptop with SSD.
-*2 - Indicates test ran on IBM P92, I5-3470@3.2GHzx4, 
+*2 - Indicates test ran on IBM P92, I5-3470@3.2GHzx4,
       16GB Ram, 256GB SSD. Ubuntu 18.04.4LTS
-*3 - Super Micro openstack VM with 16 CPU, 126GB
-     Ram fast SSD SAS drives.   CPU.... CPU speed...
-     drive speed...   With config changed recomended
-     by pgtune. 
+*3 - Super Micro OpenStack Ubuntu 16.04 LTS VM with 16 cores / 126GB mem
+     RAM: DDR4-2933 2RX4 (16Gb) LP ECC RDIMM
+     Intel CLX (Cascade Lake Gold) 6230 4/2P 20C/40T 2.1G 27.5M 10.4GT
+     SSD SAS drives - WDC/HGST Ultrastar SS530 6.4TB SAS 12Gb
+     With config changed recomended by pgtune.
 *3L- Same Super Micro as *3 but with 899,993,602 records
-*4 - Super micro with fast NVME bare metal RHEL-7 40 core
-     768GB Ram.
+*4 - Super Micro bare metal RHEL 7.8 with FIPS 140-2 encryption enabled
+     RAM: DDR4-2666 2Rx4 (32Gb) ECC REG DIMM
+     Intel SKL (SkyLake) 8160 8/4/2P 24C/48T 2.1G 33M 10.4GT
+     NVMe drives - Samsung PM983, 3.84TB,NVMe,PCIe3.0x4
+     With config changed recomended by pgtune.
+*4L  
      
 
 
@@ -85,7 +90,8 @@ Create the database, table, index for the mapping file
 
 Generate sample oids mapping file:
   when in bash
-  python generateoids.py 30000000 data/stage/generated_oids.map.txt 
+  #python generateoids.py 30000000 data/stage/generated_oids.map.txt 
+  nohup time -o time.generateoids.10m.txt python $PWD/generateoids.py 10000000 $PWD/data/stage/generated_oids.10m.map.txt
   # that has a number of synthetically
   # generated oids.  This file will consume about 
   # 2.7 Gig of storage space. You can reduce this by changing 
@@ -98,13 +104,14 @@ Generate sample oids mapping file:
   # *2 - 12m8.459s
   # *3 - 05m24.9s
   # *3L- 4h:20m:26sec  generated_oids.map.txt is 75G
-  # *4 - 52m45s - db load 7.5G with 90,007,790 recs
-  #
+  # *4 - 52m45s - db load 7.5G with 90,007,790 recsPerSec=
+  # *4L - ..m..s db load ..G with ... recs.  recsPerSec=
   # To generate roughly 1 billion records 
   nohup time -o time.generateoids.340m.txt python $PWD/generateoids.py 343000000 $PWD/data/stage/generated_oids.340m.map.txt
   
 Convert the oids file data file into a SQL command file to feed into postgress
-  time python create_db_load.py data/stage/generated_oids.map.txt data/stage/db_load.sql
+  #time python create_db_load.py data/stage/generated_oids.map.txt data/stage/db_load.sql
+  nohup time -o time.create_db.10m.txt python create_db_load.py data/stage/generated_oids.10m.map.txt data/stage/db_load.10m.sql
   # replace test.map.txt with your input file. 
   # it will generate a file named in second parameter
   # this file will be slightly larger than the 
@@ -121,7 +128,8 @@ Convert the oids file data file into a SQL command file to feed into postgress
   
   
 Load Postgress with the oids data 
-  time psql -U test -f data/stage/db_load.sql
+  #time psql -U test -f data/stage/db_load.sql
+  nohup time -o time.load_db.10m.txt psql -U test -f data/stage/db_load.10m.sql
   # On linux use time psql -f data/stage/db_load.sql 
   # to measure how long it takes. 
   # generates a file data/log/db_load.RESULT.txt
@@ -161,7 +169,8 @@ parent oid, and table for every chiold oid in the system.
 Run the query to select the parent oid and table for
 every child oid and table in the input data.
   # When in bash
-  time psql -f data/stage/db_simple_queries.sql
+  #time psql -f data/stage/db_simple_queries.sql
+  nohup time -o time.db_simple.10m.txt psql -U test -f $PWD/data/stage/generated_oids.10m.map.txt
   # This run will generate a file data/log/simple_query.RESULTS.txt
   # that shows the results of every query.
   # *1- ...m...s for 29.99 million records
@@ -195,7 +204,8 @@ file.
    # *4- 
 
 # Produce the test script for httpTester to exercise ther server
-  time python create_http_test_script.py data/stage/generated_oids.map.txt data/stage/http-test-file.txt
+  #time python create_http_test_script.py data/stage/generated_oids.map.txt data/stage/http-test-file.txt
+  nohup time -o time.create_http_test.10m.txt python create_http_test_script.py data/stage/generated_oids.map.10m.txt data/stage/http-test-file.10m.txt
   # *4 - 1m54.37s - 789.5K per sec
 
   # Produce test script for roughly 1B records
@@ -384,18 +394,26 @@ time bin/httpTest -MaxThread=600 -in=../data/stage/http-test-file.txt > t.t
 ## Getting a Ubuntu install working
 ## Postgres 10 on Ubuntu 18.04 desktop
 ###########
+sudo apt-get update
+sudo apt-get -y upgrade
 sudo apt-get install vim
 sudo apt-get install git
 git clone https://github.com/joeatbayes/oid-mapper.git oidmap
 sudo chmod -R o+rwx /data/oidmap
+sudo apt-get install openjdk-8-jdk
+sudo apt-get install docker
+sudo apt-get install postgresql postgresql-contrib
+
+https://www.enterprisedb.com/download-postgresql-binaries
+wget https://sbp.enterprisedb.com/getfile.jsp?fileid=12571&_ga=2.258807880.399051859.1591913766-484941476.1591913766
 
 # If using machine with high speed storage on /data
 sudo mv oidmap /data/oidmap
 cd /data/oidmap
 
 # Required package install
-sudo apt-get update
-sudo apt-get -y upgrade
+https://yallalabs.com/linux/how-to-install-and-use-postgresql-10-on-ubuntu-16-04/
+
 
 # we need golang version 1.13 or newer for the strings.replaceAll
 #   https://tecadmin.net/install-go-on-ubuntu/
@@ -417,59 +435,46 @@ export GOROOT=/usr/local/go
 export GOPATH=$HOME/Projects/Proj1
 export PATH=$GOPATH/bin:$GOROOT/bin:$PATH
 
-
-sudo apt-get install openjdk-8-jdk
-sudo apt-get install docker
-sudo apt-get install postgresql postgresql-contrib
 # On my system this install postgres 10 If you want a 
 #  newer version see https://pgdash.io/blog/postgres-11-getting-started.html
 
 # Install the jdbc drivers for postgres
 sudo apt-get install libpostgresql-jdbc-java
-
 sudo apt-get update
 
 # Configuring Postgress
 # See: https://tecadmin.net/install-postgresql-server-on-ubuntu/
-sudo su - postgres
-psql
-# with postgres-# prompt
-   CREATE ROLE test WITH LOGIN CREATEDB ENCRYPTED PASSWORD 'test';
-   CREATE ROLE YourUserId WITH LOGIN CREATEDB ENCRYPTED PASSWORD 'YourPassword';
-   # To show the users in the system to verify your user was created
-   \du
-   CREATE DATABASE jwork WITH OWNER jwork;
-   CREATE DATABASE test WITH OWNER test;
-   CREATE DATABASE yourUserId WITH OWNER YourUserId;
-   \q
-#  The Create database is done for each user created since the 
-#  default database the system will attempt to connect to is same
-#  name as user.     Where I created a user jwork you would create
-#  one with the name of the linux user you want to use to access
-#  postgres.
+# Stop existing listener
+ sudo systemctl stop postgresql  
+# Check to be sure it actually stopped 
+ sudo systemctl status postgresql
 
-# return to your linux user.
-exit
+sudo mkdir /data2/pg12data
+sudo chown jellsworth:games /data2/pg12data
+/usr/lib/postgresql/12/bin/initdb -D /data2/pg12data
+ sudo chmod -R a+rw /var/run/postgresql
+/usr/lib/postgresql/12/bin/pg_ctl -D /data2/pg12data -l logfile start
+  
+# look to be sure database actually started 
+  cat logfile 
 
-# On my ubuntu desktop  Version 18.04.4 LTS
-# I found the ubuntu settings at /etc/postgresql/10/main
-# You may have to look elsewhere.   If you desparate 
-# to find yours tyr the following
-#   sudo find / | grep postgresssql.conf
+/usr/lib/postgresql/12/bin/createdb jellsworth 
+
+psql -c "CREATE ROLE test WITH LOGIN CREATEDB ENCRYPTED PASSWORD 'test';"
+  # Change password to somethig you wuld actually want to use. 
+psql -c "CREATE DATABASE test WITH OWNER test;"
 
 # Edit the file 
-   /etc/postgresql/10/main/pg_hba.conf
-   # sudo vi  /etc/postgresql/10/main/pg_hba.conf
-   # Add the followiing lines after the line that says local all postgres peer
-   # In another linux server I found it at sudo vi  /etc/postgresql/9.5/main/pg_hba.conf
-   # so the file looks like
-   local   all             postgres                                peer
-   local   all             jwork                                   md5
+   # /data2/pg12data/pg_hba.conf
+   vi  /data2/pg12data/pg_hba.conf
+   
+   # Add the followiing line to allow test to login using md5 password   
    local   all             test                                    md5
+   local   all             all                                     trust
 
 # Now we must enable network listener.
-# Edit file sudo vi /etc/postgresql/10/main/postgresql.conf
-#  sudo vi /etc/postgresql/9.5/main/postgresql.conf
+# Edit file sudo vi /data2/pg12data/postgresql.conf
+  vi /data2/pg12data/postgresql.conf
 #  Change the line
 #  Use the proper location for where your postgres is 
 #  installed. 
@@ -477,116 +482,57 @@ exit
 # to  the following by removing the leading #
    listen_addresses = 'localhost'   
 
-##
-# Moving Default Data Location
-##
-#  While editing the config file change the data_directory, hba_file and ident_file 
-#  to the desired location.  Assuming /data is where you have the fast
-#  storage mounted 
-  sudo mkdir /data/postgress
-  sudo ls /data/postgress/postgresql/9.5/main     
-  sudo systemctl stop postgresql  
-  sudo systemctl status postgresql
-  sudo rsync -av /var/lib/postgresql /data/postgress
-  sudo mv /var/lib/postgresql/9.5/main /var/lib/postgresql/9.5/main.bak
-  # Edit the postgresql.conf to include 
-  data_directory = '/data/postgress/postgresql/9.5/main'
-  sudo systemctl start postgresql
-  sudo systemctl status postgresql
-  sudo su - postgres
-  psql
-  SHOW data_directory;
-  \q
-  exit
+/usr/lib/postgresql/12/bin/pg_ctl -D /data2/pg12data -l logfile restart
+# look to be sure database actually started 
+  cat logfile 
 
-
-# Restart the server 
-sudo service postgresql restart
-
-
-# Check to see if postgres server is running 
-service --status-all
 # Check to see if Posgres is actually listening on the portion
 sudo netstat -plnt
 
-
-# If server does not seem to be responding then
-# check the log file.  On my system I used the 
-# command 
-tail -n500 /var/log/postgresql/*
-# If you see a line containing " LOG:  database system is ready to accept connections" then you should be able to now log in using psql
-
 # Create the oidmap database
-psql -f create_db.sql
+psql -U test -f create_db.sql
 
-# Use PGTune to generate new config settings for your machine
-# modify postgresql.conf with the setting you generated.  Here is 
-# what it generated for my machine
-sudo vi /etc/postgresql/10/main/postgresql.conf
+
+#Edit pg_conf with these tunning settings
+# Some will have to be uncommented by
+# removing the #
 # https://pgtune.leopard.in.ua/#/
-# DB Version: 10
-# OS Type: linux
-# DB Type: oltp
-# Total Memory (RAM): 16 GB
-# CPUs num: 4
-# Data Storage: ssd
+# Linux 100GB Ram 14 cores on SSD
+vi /data2/pg12data/postgresql.conf
+  max_connections = 100
+  shared_buffers = 25GB
+  effective_cache_size = 75GB
+  maintenance_work_mem = 2GB
+  checkpoint_completion_target = 0.9
+  wal_buffers = 16MB
+  default_statistics_target = 100
+  random_page_cost = 1.1
+  effective_io_concurrency = 200
+  work_mem = 32MB
+  min_wal_size = 1GB
+  max_wal_size = 4GB
+  max_worker_processes = 14
+  max_parallel_workers_per_gather = 4
+  max_parallel_workers = 14
+  max_parallel_maintenance_workers = 4
 
+/usr/lib/postgresql/12/bin/pg_ctl -D /data2/pg12data -l logfile restart
 
-# Joe reduced some of these settings 
-# because it was pegging the system .
-# during the database load.
-max_connections = 300
-shared_buffers = 3GB
-effective_cache_size = 10GB
-maintenance_work_mem = 1GB
-checkpoint_completion_target = 0.9
-wal_buffers = 16MB
-default_statistics_target = 100
-random_page_cost = 1.1
-effective_io_concurrency = 200
-work_mem = 6990kB
-min_wal_size = 2GB
-max_wal_size = 6GB
-max_worker_processes = 3
-max_parallel_workers_per_gather = 2
-max_parallel_workers = 3
-# END OF postgresql.conf edits.
-sudo service postgresql restart
+# Execute the GoLang & Java Samples from
+# Above
+# Execute the Java Samples from Above
 
-# These Generation script next 5 lines 
-# are the same as those above. included 
-# here to  keep continutiy in this section
-time python generateoids.py
-  # Or on machines with short timeout disconnect
-  nohup time python3 generateoids.py > t.t >2 t.t.err &  
-time python create_db_load.py test.map.txt
-time psql -f db_simple_queries.sql
-time python generateInQueries.py test.map.txt
- 
-time psql -f db_load.sql
-# This utility takes some time You can check progress
-#  with the following
-    # Counts the lines which is roughly equal to the number
-	# of 50,000 record inserts completed
-    wc -l db_load.RESULT.txt
-	# Shows last lines in the DB
-	tail db_load.RESULT.txt
-	
-time psql -f db_in_queries.sql
-time psql -f db_in_queries.sql
- 
- # Get the size of the oidmap database and related index
- psql
- \c oidmap
-// Get size of database
-SELECT pg_size_pretty(pg_database_size('oidmap'));
-// Get size of main table
-SELECT pg_size_pretty(pg_relation_size('omap'));
-// Get size of index
-SELECT pg_size_pretty(pg_indexes_size('index_empid'));
-// Get # rows in main table
-SELECT COUNT(*) FROM omap;
-
+###  Execute section to Load and Test Data
+###  in basic operation above. 
+# Get the size of the oidmap database and related index
+# Get size of database
+/usr/lib/postgresql/12/bin/psql -c "SELECT pg_size_pretty(pg_database_size('oidmap'));"
+# Get size of main table
+/usr/lib/postgresql/12/bin/psql -U test -c "SELECT pg_size_pretty(pg_relation_size('omap'));" oidmap
+# Get size of index
+/usr/lib/postgresql/12/bin/psql -U test -c "SELECT pg_size_pretty(pg_indexes_size('ondx'));" oidmap
+# Get # rows in main table
+/usr/lib/postgresql/12/bin/psql -U test -c "SELECT COUNT(*) FROM omap;" oidmap
 
 
 ## Setup JDBC Driver for Postgres
@@ -605,42 +551,6 @@ javac InQueryFile.java
 java InQueryFile
 
 
-# Execute the GoLang & Java Samples from
-# Above
-
-# Execute the Java Samples from Above
-
-
-######
-## Additonal Settings taht may be needed for some servers
-######
-# Modify Linux limits to allow more open files
-  sudo vi /etc/security/limits.conf
-  # add the following lines
-  root soft     nproc          131072
-  root hard     nproc          131072
-  root soft     nofile         131072
-  root hard     nofile         131072
-  jellsworth    hard           maxlogins       50
-
-
-# Fix the SSH session timeout issue
-  sudo vi /etc/ssh_config
-  # Add the lines 
-  ClientAliveInterval 120
-  ClientAliveCountMax 720
-  
-  
-# Configure aide to ignore the data directories
-# Modify the directories.
-    update /etc/aide.conf 
-      # and added 2 lines to the bottom -> 
-        !/data Full 
-        !/data2 Full 
-     Run update-aide.conf
-
-
-# Ask the VM Admin to allow access on port 9832
 
 
 
@@ -783,9 +693,38 @@ cd /data3/oidmap
 # the create_db.sql under the section
 # basic setup above
 
+######
+## Additonal Settings taht may be needed for some servers
+######
+# Modify Linux limits to allow more open files
+  sudo vi /etc/security/limits.conf
+  # add the following lines
+  root soft     nproc          131072
+  root hard     nproc          131072
+  root soft     nofile         131072
+  root hard     nofile         131072
+  jellsworth    hard           maxlogins       50
 
-##################
-## Allow longer timeout on idle SSH sessions
+
+# Fix the SSH session timeout issue
+  sudo vi /etc/ssh_config
+  # Add the lines 
+  ClientAliveInterval 120
+  ClientAliveCountMax 720
+  
+  
+# Configure aide to ignore the data directories
+# Modify the directories.
+    update /etc/aide.conf 
+      # and added 2 lines to the bottom -> 
+        !/data Full 
+        !/data2 Full 
+     Run update-aide.conf
+
+
+# Ask the VM Admin to allow access on port 9832
+
+# Allow longer timeout on idle SSH sessions
 ##################
 To $HOME/.bashrc add the following line
 TMOUT=9000

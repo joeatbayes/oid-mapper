@@ -1,21 +1,30 @@
+Modify Postgress install for ubuntu to more closely match that from RHEL using more recent version of postgress and named directory.
+
+Create a script that provides a base name of input that runs all phases with the generate oids as simple
+
+Create a queue based file diretory where we read files in time sequence of when created. create new SQL statements and then records the last name of file processed.  Organize this as one directory per day so we do not accumulate more files than healthy in single directory.  Records last file   
+
+############
+## Under Consideration:
+############
 Modify the bulk SQL create script to drop the primary ndx and then re-add it after the insert is complete.
 Modify the bulk SQL to set autocomplete to false.
-Modify inQueryFile.java to read input and output file from command line. 
-Modify create_db_load.py to read output file name from command line
-Modify generateSimpleQueries.py to read output file name from command line
-Modify generateInQueries.py to read output file name from command line
-Modify generateSimpleQueries.py to read output file name from command line
-Create a script that provides a base name of input that runs all phases with the generate oids as simple
-Create a queue based file diretory where we read files in time sequence of when created. create new SQL statements and then records the last name of file processed.  Organize this as one directory per day so we do not accumulate more files than healthy in single directory.  Records last file 
 
 
+DONE:
+DONE:JOE:06-10-2012: Modify create_db_load.py to read output file name from command line
+DONE:JOE:06-10-2012: Modify generateSimpleQueries.py to read output file name from command line
+DONE:JOE:06-10-2012: Modify generateInQueries.py to read output file name from command line
+DONE:JOE:06-10-2012: Modify generateSimpleQueries.py to read output file name from command line
+DONE:JOE:06-10-2012: Modify inQueryFile.java to read input and output file from command line. 
+DONE:JOE:06-10-2012: MOdify Postgress install to use more recent version and start postgress server using named directory. Removing the hacked version of moving data directory.
+DONE:JOE:06-12-2012: Update httpServer to allow a larger number of DB connections to be used to match 
+   the 100 in the postgress config. Build new version of httpServer and copy over to POC bare metal.
 DONE:JOE:2020-06-09: python script generating db load does not seem to be including last oids shown in input file. 
-
 DONE:JOE:2020-06-09: httpServer seems to slow down after 2 threads. I think we are 
    hitting it from the client without blocking so I thnk something 
    is blocking in the postgress client side connection manager 
    becauseuase postgress cpu usage actually drops when hitting it harder.
-
 DONE:JOE:2020-06-07: Modify Java examples to login with PGUSER and PGPASS enviornment variables. 
 DONE:JOE:2020-06-06: Figure out what is wrong with http test so it stops error out when testing multi-threaded.
 DONE:JOE:202-06-06: Update GO & Java examples to read PGUSER enviornment variable to build connect string.
