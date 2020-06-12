@@ -91,7 +91,7 @@ Create the database, table, index for the mapping file
 Generate sample oids mapping file:
   when in bash
   #python generateoids.py 30000000 data/stage/generated_oids.map.txt 
-  nohup time -o time.generateoids.10m.txt python $PWD/generateoids.py 10000000 $PWD/data/stage/generated_oids.10m.map.txt
+  nohup time -o $PWD/time.generateoids.10m.txt python $PWD/generateoids.py 10000000 $PWD/data/stage/generated_oids.10m.map.txt
   # that has a number of synthetically
   # generated oids.  This file will consume about 
   # 2.7 Gig of storage space. You can reduce this by changing 
@@ -102,16 +102,17 @@ Generate sample oids mapping file:
   # available. 
   # *1 - 
   # *2 - 12m8.459s
-  # *3 - 05m24.9s
+  # *3 - 8m30.48s - 2.5G file created with 29,998,068 Recs 
+  #      = 58.7K recs per sec.
   # *3L- 4h:20m:26sec  generated_oids.map.txt is 75G
-  # *4 - 52m45s - db load 7.5G with 90,007,790 recsPerSec=
+  # *4 - 52m45s - db load 7.5G with 90K recsPerSec
   # *4L - ..m..s db load ..G with ... recs.  recsPerSec=
   # To generate roughly 1 billion records 
-  nohup time -o time.generateoids.340m.txt python $PWD/generateoids.py 343000000 $PWD/data/stage/generated_oids.340m.map.txt
+  nohup time -o $PWD/time.generateoids.340m.txt python $PWD/generateoids.py 343000000 $PWD/data/stage/generated_oids.340m.map.txt
   
 Convert the oids file data file into a SQL command file to feed into postgress
   #time python create_db_load.py data/stage/generated_oids.map.txt data/stage/db_load.sql
-  nohup time -o time.create_db.10m.txt python create_db_load.py data/stage/generated_oids.10m.map.txt data/stage/db_load.10m.sql
+  nohup time -o $PWD/time.create_db.10m.txt python create_db_load.py $PWD/data/stage/generated_oids.10m.map.txt $PWD/data/stage/db_load.10m.sql
   # replace test.map.txt with your input file. 
   # it will generate a file named in second parameter
   # this file will be slightly larger than the 
@@ -119,17 +120,17 @@ Convert the oids file data file into a SQL command file to feed into postgress
   # *1 -201 seconds for 29.9 million rec = 148.8K per sec
   # records.
   # *2 - 1m9.7s - 69 seconds = 43.3K per sec
-  # *3 - 0m44s - 747K per sec
+  # *3 - 0m46.7s - 29,998,068 / ((0*60)+46.7) = 642.4K rec per sec.
   # *3L- 21m:43.87s - db_load.sql is 84G
   # *4 - 2m47s - db load 7.5G  file with 90,007,790 recs = 179K per sec
   #
   # To generate SQL to Load the aprox 1 billion records 
-  nohup time -o time.create_db.340m.txt python create_db_load.py data/stage/generated_oids.340m.map.txt data/stage/db_load.340m.sql
+  nohup time -o $PWD/time.create_db.340m.txt python create_db_load.py data/stage/generated_oids.340m.map.txt data/stage/db_load.340m.sql
   
   
 Load Postgress with the oids data 
   #time psql -U test -f data/stage/db_load.sql
-  nohup time -o time.load_db.10m.txt psql -U test -f data/stage/db_load.10m.sql
+  nohup time -o $PWD/time.load_db.10m.txt psql -U test -f data/stage/db_load.10m.sql
   # On linux use time psql -f data/stage/db_load.sql 
   # to measure how long it takes. 
   # generates a file data/log/db_load.RESULT.txt
@@ -145,20 +146,21 @@ Load Postgress with the oids data
   # *2 - 29.9 million records took 17m51.99s 
   #       or 27.8K records per second.
   #       With modified postgress config shown below.
-  # *3  - 9m14s
+  # *3  - 8m41.27sec - 29,998,068/((8*60)+41.3) = 57.5K rec per sec.
+  #       after load dataase size is 10G.
   # *3L - 25h:08m:20s - 899,993,602 / ((25*60*60)+(8*60)+20)
   #       9,944 records per second.  Postgress Data usage 
   #       after inserts 189G.
   #  *4 - 28m16s - 90,007,790 / ((28*60) + 16) - 53,070 rec per sec
   # 
   # To load roughly 1B records into the datbase
-  nohup time -o time.load_db.340m.txt psql -U test -f data/stage/db_load.340m.sql
+  nohup time -o $PWD/time.load_db.340m.txt psql -U test -f data/stage/db_load.340m.sql
   
   
 Generate the file containing queries to test obtaining the distinct 
 parent oid, and table for every chiold oid in the system. 
   #When in bash shell.
-  time python generateSimpleQueries.py data/stage/generated_oids.map.txt data/stage/db_simple_queries.sql
+  time -o $PWD/time.genSimple.10m.txt python generateSimpleQueries.py $PWD/data/stage/generated_oids.map.txt $PWD/data/stage/db_simple_queries.sql
   # *1-On my laptop this took   266 seconds or about
   #   112,406 per second.
   #*2-
@@ -170,7 +172,7 @@ Run the query to select the parent oid and table for
 every child oid and table in the input data.
   # When in bash
   #time psql -f data/stage/db_simple_queries.sql
-  nohup time -o time.db_simple.10m.txt psql -U test -f $PWD/data/stage/generated_oids.10m.map.txt
+  nohup time -o $PWD/time.db_simple.10m.txt psql -U test -f $PWD/data/stage/generated_oids.10m.map.txt
   # This run will generate a file data/log/simple_query.RESULTS.txt
   # that shows the results of every query.
   # *1- ...m...s for 29.99 million records
@@ -205,11 +207,12 @@ file.
 
 # Produce the test script for httpTester to exercise ther server
   #time python create_http_test_script.py data/stage/generated_oids.map.txt data/stage/http-test-file.txt
-  nohup time -o time.create_http_test.10m.txt python create_http_test_script.py data/stage/generated_oids.map.10m.txt data/stage/http-test-file.10m.txt
+  nohup time -o $PWD/time.create_http_test.10m.txt python create_http_test_script.py $PWD/data/stage/generated_oids.10m.map.txt $PWD/data/stage/http-test-file.10m.txt
+  # *3 - 34.5s - 29,998,068 / ((0*60)+34.5) = 869.5K rec per sec.
   # *4 - 1m54.37s - 789.5K per sec
 
   # Produce test script for roughly 1B records
-  nohup time -o time.create_http_test.340m.txt python create_http_test_script.py data/stage/generated_oids.map.340m.txt data/stage/http-test-file.340m.txt
+  nohup time -o $PWD/time.create_http_test.340m.txt python create_http_test_script.py $PWD/data/stage/generated_oids.map.340m.txt $PWD/data/stage/http-test-file.340m.txt
 
 
  
