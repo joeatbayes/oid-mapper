@@ -1,3 +1,7 @@
+Read set of oid changes from direcory of files.  process and write a set to another directory of oids to extract.  Move the files as completed to a done directory with the cc/yy/mm/dd/hh semantic. 
+
+Test against the FIPs encrypted drive
+
 Modify Postgress install for ubuntu to more closely match that from RHEL using more recent version of postgress and named directory.
 
 Create a script that provides a base name of input that runs all phases with the generate oids as simple

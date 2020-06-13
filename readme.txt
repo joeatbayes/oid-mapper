@@ -125,7 +125,7 @@ Convert the oids file data file into a SQL command file to feed into postgress
   #     = 172.14K rec per sec.
   # *2 - 1m9.7s - 69 seconds = 43.3K per sec
   # *3 - 0m46.7s - 29,998,068 / ((0*60)+46.7) = 642.4K rec per sec.
-  # *3L- 21m:43.87s - db_load.sql is 84G
+  # *3L- 26:27.18 - 1,029,008,744/((0*60*60)+(26*60)+27) = 648.4K rec per sec
   # *4 - 2m47s - db load 7.5G  file with 90,007,790 recs = 179K per sec
   # *4L -33m35.29s  1,028,993,082/((0*60*60)+(33*60)+35) = 510.67K per sec
   #
@@ -157,6 +157,8 @@ Load Postgress with the oids data
   #       9,944 records per second.  Postgress Data usage 
   #       after inserts 189G.
   #  *4 - 28m16s - 90,007,790 / ((28*60) + 16) - 53,070 rec per sec
+  #  *4L - 7h53m49s - 1,028,993,082/((7*60*60)+(53*60)+49) -36.2K rec per sec
+  #        Postgress is 207G after load completes.
   # 
   # To load roughly 1B records into the datbase
   nohup time -o $PWD/time.load_db.340m.txt psql -U test -f data/stage/db_load.340m.sql
@@ -170,8 +172,8 @@ Load Postgress with the oids data
   # *4 - 1m54.37s - 789.5K per sec
 
   # Produce test script for roughly 1B records
-  nohup time -o $PWD/time.create_http_test.340m.txt python create_http_test_script.py $PWD/data/stage/generated_oids.map.340m.txt $PWD/data/stage/http-test-file.340m.txt
-
+  nohup time -o $PWD/time.create_http_test.340m.txt python create_http_test_script.py $PWD/data/stage/generated_oids.340m.map.txt $PWD/data/stage/http-test-file.340m.txt
+  # *4 - 22m31.34s - 1,028,993,082/((0*60*60)+(22*60)+31.34) = 761.5K rec per sec.
 
 ## OBSOLETE ##
 #Generate the file containing queries to test obtaining the distinct 
@@ -314,13 +316,21 @@ bin/httpTest -MaxThread=4 -in=../data/stage/http-test-file.10m.txt
   # *2 = 7m15s - (((7*60)+15)*1000)/29900000= 0.01455ms per oid
 
 # Medium load
-bin/httpTest -MaxThread=20 -in=../data/stage/http-test-file.10m.txt 
+  bin/httpTest -MaxThread=20 -in=../data/stage/http-test-file.10m.txt 
   # *1 =  RecPerSec=1833 - ((1/1833)*1000)/25 = 0.022ms per oid
           9m6.53 29,993,508/((9*60)+53) = 50.58K lookup per sec.
           (1/50579)*1000 = 0.0198ms per oid.
           last reported RPS=1952 = ((1/1952)*1000)/25 = 0.0205ms per oid.
   # *2 = 4m20s - (((4*60)+20)*1000)/29900000= 0.008ms per oid
   # *3 = 1m57 - (((1*60)+75)*1000)/29900000= 0.0045ms per oid
+
+  # Same thing but reading the larger dataset inut.
+  #bin/httpTest -MaxThread=20 -in=../data/stage/http-test-file.340m.txt 
+  nohup time -o httpTest.340m.txt bin/httpTest -MaxThread=20 -in=../data/stage/http-test-file.340m.txt > t.t
+  # *4L - Initial 16390 -  40m13s -  sentinal rps 16415 
+          1,028,993,082/((0*60*60)+(40*60)+13) = 426.44K recs per sec
+          (((40*60)+13)*1000)/1,028,993,082= 0.00235ms per oid
+
 
 # Stress Test Load
 bin/httpTest -MaxThread=75 -in=../data/stage/http-test-file.10m.txt 
@@ -334,6 +344,11 @@ bin/httpTest -MaxThread=75 -in=../data/stage/http-test-file.10m.txt
  # *3 = 1m31s - (((1*60)+31)*1000)/29900000= 0.003ms per oid
  # *4 = 3m54s - (((3*60)+54)*1000)/90,007,790 = 0.0026ms per oid
  
+ nohup time -o httpTest.340m.txt bin/httpTest -MaxThread=75 -in=../data/stage/http-test-file.340m.txt > t.t
+ # *4L = 22m31.24s -  reported seminal rps = 14,576
+          1,028,993,082/((0*60*60)+(22*60)+31.24) = 761.5K recs per sec
+          (((22*60)+31)*1000)/1,028,993,082= 0.0013123ms per oid
+ 
 # Stress Test Load abuse
 bin/httpTest -MaxThread=250 -in=../data/stage/http-test-file.10m.txt 
   # *1 = RecPerSec=1770 - ((1/1770)*1000)/25 = 0.023ms per oid
@@ -346,9 +361,23 @@ bin/httpTest -MaxThread=250 -in=../data/stage/http-test-file.10m.txt
          small amounts.  
   # *3 = 1m13s - (((1*60)+13)*1000)/29900000= 0.00244ms per oid
 
+nohup time -o httpTest.340m.txt bin/httpTest -MaxThread=250 -in=../data/stage/http-test-file.340m.txt > t.t
+ # *4L = ..m...24s -  reported seminal rps = ...
+          1,028,993,082/((0*60*60)+(..*60)+...24) = .. recs per sec
+          (((..*60)+..)*1000)/1,028,993,082= ...ms per oid
+ 
+
+
 bin/httpTest -MaxThread=400 -in=../data/stage/http-test-file.10m.txt 
   # *1 = RecPerSec=1690 - ((1/1690)*1000)/25 = 0.024ms per oid 
   # *3 = 1m7.6s - (((1*60)+7.6)*1000)/29900000= 0.00226ms per oid
+
+nohup time -o httpTest.340m.txt bin/httpTest -MaxThread=400 -in=../data/stage/http-test-file.340m.txt > t.t
+ # *4L = ..m...24s -  reported seminal rps = ...
+          1,028,993,082/((0*60*60)+(..*60)+...24) = .. recs per sec
+          (((..*60)+..)*1000)/1,028,993,082= ...ms per oid
+ 
+
 
 time -o time.httpTest600.txt bin/httpTest -MaxThread=600 -in=../data/stage/http-test-file.10m.txt > t.t
 bin/httpTest -MaxThread=600 -in=../data/stage/http-test-file.10m.txt 
@@ -357,6 +386,12 @@ bin/httpTest -MaxThread=600 -in=../data/stage/http-test-file.10m.txt
          last reported RPS=2117.6 = ((1/2117.6)*1000)/25 = 0.0189ms per oid.
          which means the last records where slightly slower than first records
   # *3 = 1m5.2s - (((1*60)+5.2)*1000)/29900000= 0.00218ms per oid
+
+nohup time -o httpTest.340m.txt bin/httpTest -MaxThread=600 -in=../data/stage/http-test-file.340m.txt > t.t
+ # *4L = ..m...24s -  reported seminal rps = ...
+          1,028,993,082/((0*60*60)+(..*60)+...24) = .. recs per sec
+          (((..*60)+..)*1000)/1,028,993,082= ...ms per oid
+ 
 
 
 # Note: When I tested with 750 connections I got errors in the server too many open 
