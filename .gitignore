@@ -167,3 +167,6 @@ data/private
 data/private/*
 *nohup*
 generated_oids.map.txt
+data/stage/db_load.*.sql
+generated_oids.*.map.txt
+data/stage/http-test-file.*.txt

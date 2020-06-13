@@ -59,7 +59,8 @@ They assume that you are on linux or have cygwin bash installed.
 ####
 # Machine Configs
 ####
-*1 - Basic Tests ran on Dell laptop with SSD.
+*1 - Basic Tests ran on Dell laptop with SSD. Intel Core I5-8365U
+     @ 1.6GHz, 1.9Ghtz,  160GB Ram,  Windows 10 enterprise
 *2 - Indicates test ran on IBM P92, I5-3470@3.2GHzx4,
       16GB Ram, 256GB SSD. Ubuntu 18.04.4LTS
 *3 - Super Micro OpenStack Ubuntu 16.04 LTS VM with 16 cores / 126GB mem
@@ -84,13 +85,13 @@ They assume that you are on linux or have cygwin bash installed.
 git clone https://github.com/joeatbayes/oid-mapper.git oidmap
 
 Create the database, table, index for the mapping file
-  psql -f create_db.sh
+  psql -U test -f create_db.sql
   # This will remove and recreate the table
 
 
 Generate sample oids mapping file:
   when in bash
-  #python generateoids.py 30000000 data/stage/generated_oids.map.txt 
+  #python generateoids.py 10000000 data/stage/generated_oids.10m.map.txt 
   nohup time -o $PWD/time.generateoids.10m.txt python $PWD/generateoids.py 10000000 $PWD/data/stage/generated_oids.10m.map.txt
   # that has a number of synthetically
   # generated oids.  This file will consume about 
@@ -100,36 +101,40 @@ Generate sample oids mapping file:
   # the total number is random but on my test it actually produced 
   # This step can be skipped when real data of the same format is
   # available. 
-  # *1 - 
+  # *1 - 9m16.367s - 2.6G file created with 29,993,508 Recs
+  #      29,993,508/((9*60)+6.367)= 54.9K recs pre sec.
   # *2 - 12m8.459s
   # *3 - 8m30.48s - 2.5G file created with 29,998,068 Recs 
   #      = 58.7K recs per sec.
-  # *3L- 4h:20m:26sec  generated_oids.map.txt is 75G
+  # *3L- 4h:52m:33sec 86GB with  
+  #      1,029,008,744/((4*60*60)+(52*60)+33)= 58.62K recs per sec
   # *4 - 52m45s - db load 7.5G with 90K recsPerSec
-  # *4L - ..m..s db load ..G with ... recs.  recsPerSec=
+  # *4L - 10h02m20s db load 86G with 1,028,993,082 recs.
+  #       1,028,993,082/((10*60*60)+(2*60)+20)= 28.47K recs per sec
   # To generate roughly 1 billion records 
   nohup time -o $PWD/time.generateoids.340m.txt python $PWD/generateoids.py 343000000 $PWD/data/stage/generated_oids.340m.map.txt
   
 Convert the oids file data file into a SQL command file to feed into postgress
-  #time python create_db_load.py data/stage/generated_oids.map.txt data/stage/db_load.sql
+  #time python create_db_load.py data/stage/generated_oids.10m.map.txt data/stage/db_load.10m.sql
   nohup time -o $PWD/time.create_db.10m.txt python create_db_load.py $PWD/data/stage/generated_oids.10m.map.txt $PWD/data/stage/db_load.10m.sql
   # replace test.map.txt with your input file. 
   # it will generate a file named in second parameter
   # this file will be slightly larger than the 
   # sum of the data passed in the list of input files.
-  # *1 -201 seconds for 29.9 million rec = 148.8K per sec
-  # records.
+  # *1 -2m54.24s = 148.8K per sec, 29,993,508/((2*60)+54.24)
+  #     = 172.14K rec per sec.
   # *2 - 1m9.7s - 69 seconds = 43.3K per sec
   # *3 - 0m46.7s - 29,998,068 / ((0*60)+46.7) = 642.4K rec per sec.
   # *3L- 21m:43.87s - db_load.sql is 84G
   # *4 - 2m47s - db load 7.5G  file with 90,007,790 recs = 179K per sec
+  # *4L -33m35.29s  1,028,993,082/((0*60*60)+(33*60)+35) = 510.67K per sec
   #
   # To generate SQL to Load the aprox 1 billion records 
   nohup time -o $PWD/time.create_db.340m.txt python create_db_load.py data/stage/generated_oids.340m.map.txt data/stage/db_load.340m.sql
   
   
 Load Postgress with the oids data 
-  #time psql -U test -f data/stage/db_load.sql
+  #time psql -U test -f data/stage/db_load.10m.sql
   nohup time -o $PWD/time.load_db.10m.txt psql -U test -f data/stage/db_load.10m.sql
   # On linux use time psql -f data/stage/db_load.sql 
   # to measure how long it takes. 
@@ -140,7 +145,7 @@ Load Postgress with the oids data
   # On large files the would be to accomodate
   # ssh session timeout
   #     nohup time psql -f db_load.sql
-  # *1 - 29.9 million  records it took  67m50s. or 4060 seconds 
+  # *1 - 40m36.8s - 29,993,508/((40*60)+36.8) = 12.3K rec per sec
   #      with out of the box postgress configuration
   #      or  7.36K records per second.
   # *2 - 29.9 million records took 17m51.99s 
@@ -156,58 +161,11 @@ Load Postgress with the oids data
   # To load roughly 1B records into the datbase
   nohup time -o $PWD/time.load_db.340m.txt psql -U test -f data/stage/db_load.340m.sql
   
-  
-Generate the file containing queries to test obtaining the distinct 
-parent oid, and table for every chiold oid in the system. 
-  #When in bash shell.
-  time -o $PWD/time.genSimple.10m.txt python generateSimpleQueries.py $PWD/data/stage/generated_oids.map.txt $PWD/data/stage/db_simple_queries.sql
-  # *1-On my laptop this took   266 seconds or about
-  #   112,406 per second.
-  #*2-
-  # *3 - 0m37.1s = 808K per sec
-  # *4 - 2m15s  = 666.7K per sec
-  
-  
-Run the query to select the parent oid and table for
-every child oid and table in the input data.
-  # When in bash
-  #time psql -f data/stage/db_simple_queries.sql
-  nohup time -o $PWD/time.db_simple.10m.txt psql -U test -f $PWD/data/stage/generated_oids.10m.map.txt
-  # This run will generate a file data/log/simple_query.RESULTS.txt
-  # that shows the results of every query.
-  # *1- ...m...s for 29.99 million records
-  #      or about ... milli-seconds per query.
-  # *2-   60m26s - (((60*60)+26)*1000)/29900000 = 0.12ms per oid
-  # *3-   60m26s - (((60*60)+26)*1000)/29900000 = 0.12ms per oid
-  # *4-
-  # A version to run in background for large files 
-  # nohup $(time psql -f $PWD/data/stage/generated_oids.lg.map.txt > $PWD/dbload.time.txt)
-  
-
-Generate sql file to Query for the parents for every child OID in 
-the system using the IN clause.   
-  # when in bash
-  python generateInQueries.py data/stage/generated_oids.map.txt data/stage/db_in_queries.sql
-  # *1- 107 seconds to generate for 29.99 million rows. 
-  # *2- 0m37.944s = 788.9K per sec
-  # *3- 0m26.5s1128.3K per sec
-  # *4- 1m39S = 909.2K per sec
-  
-
-Run the query to select the parents for every child OID in the input
-file. 
-   # when in bash  
-   time psql -f data/stage/db_in_queries.sql 
-   # this generates a file in data/log/query.RESULTS.txt 
-   # *1-  20min23.26sec or 1220 seconds to run for 29.99 million 
-   #       child oids or about 0.0408 ms per child oid lookup.
-   # *2-  8m18s or (((8*60)+18)*1000)/29900000 = 0.0167ms per oid lookup
-   # *3-  5m7s or (((5*60)+7)*1000)/29900000 = 0.0103ms per oid lookup
-   # *4- 
 
 # Produce the test script for httpTester to exercise ther server
-  #time python create_http_test_script.py data/stage/generated_oids.map.txt data/stage/http-test-file.txt
+  #time python create_http_test_script.py data/stage/generated_oids.10m.map.txt data/stage/http-test-file.10m.txt
   nohup time -o $PWD/time.create_http_test.10m.txt python create_http_test_script.py $PWD/data/stage/generated_oids.10m.map.txt $PWD/data/stage/http-test-file.10m.txt
+  # *1 - 1m35.64s - 29,993,508/((1*60)+34.64) = 316.9K rec per sec
   # *3 - 34.5s - 29,998,068 / ((0*60)+34.5) = 869.5K rec per sec.
   # *4 - 1m54.37s - 789.5K per sec
 
@@ -215,7 +173,54 @@ file.
   nohup time -o $PWD/time.create_http_test.340m.txt python create_http_test_script.py $PWD/data/stage/generated_oids.map.340m.txt $PWD/data/stage/http-test-file.340m.txt
 
 
- 
+## OBSOLETE ##
+#Generate the file containing queries to test obtaining the distinct 
+#parent oid, and table for every chiold oid in the system. 
+#  #When in bash shell.
+#  time -o $PWD/time.genSimple.10m.txt python generateSimpleQueries.py $PWD/data/stage/generated_oids.map.txt $PWD/data/stage/db_simple_queries.sql
+#  # *1-On my laptop this took   266 seconds or about
+#  #   112,406 per second.
+#  #*2-
+#  # *3 - 0m37.1s = 808K per sec
+#  # *4 - 2m15s  = 666.7K per sec
+  
+## OBSOLETE ##  
+#Run the query to select the parent oid and table for
+#every child oid and table in the input data.
+#  # When in bash
+#  #time psql -f data/stage/db_simple_queries.sql
+#  nohup time -o $PWD/time.db_simple.10m.txt psql -U test -f $PWD/data/stage/generated_oids.10m.map.txt
+#  # This run will generate a file data/log/simple_query.RESULTS.txt
+#  # that shows the results of every query.
+#  # *1- ...m...s for 29.99 million records
+#  #      or about ... milli-seconds per query.
+#  # *2-   60m26s - (((60*60)+26)*1000)/29900000 = 0.12ms per oid
+#  # *3-   60m26s - (((60*60)+26)*1000)/29900000 = 0.12ms per oid
+#  # *4-
+#  # A version to run in background for large files 
+#  # nohup $(time psql -f $PWD/data/stage/generated_oids.lg.map.txt > $PWD/dbload.time.txt)
+  
+## OBSOLETE ##  
+# Generate sql file to Query for the parents for every child OID in 
+# the system using the IN clause.   
+#  # when in bash
+#  python generateInQueries.py data/stage/generated_oids.map.txt data/stage/db_in_queries.sql
+#  # *1- 107 seconds to generate for 29.99 million rows. 
+# # *2- 0m37.944s = 788.9K per sec
+# # *3- 0m26.5s1128.3K per sec
+# # *4- 1m39S = 909.2K per sec
+  
+## OBSOLETE ##  
+# Run the query to select the parents for every child OID in the input
+# file. 
+#   # when in bash  
+#   time psql -f data/stage/db_in_queries.sql 
+#   # this generates a file in data/log/query.RESULTS.txt 
+#   # *1-  20min23.26sec or 1220 seconds to run for 29.99 million 
+#   #       child oids or about 0.0408 ms per child oid lookup.
+#   # *2-  8m18s or (((8*60)+18)*1000)/29900000 = 0.0167ms per oid lookup
+#   # *3-  5m7s or (((5*60)+7)*1000)/29900000 = 0.0103ms per oid lookup
+#   # *4- 
  
    
    
@@ -292,25 +297,34 @@ go get -u -t "github.com/joeatbayes/http-stress-test/httpTest"
 
 
 # Single threaded test against server
-time bin/httpTest -MaxThread=1 -in=../data/stage/http-test-file.txt > t.t
-  # *1 - 
+bin/httpTest -MaxThread=1 -in=../data/stage/http-test-file.10m.txt 
+  # *1 - RecPerSec=145.3 - ((1/145.3)*1000)/25 = 0.275ms per oid
   # *2 - 19m33s - (((19*60)+30)*1000)/29900000 = 0.039ms per oid
+  # *3L -
+  # *4L -   
 
 # Slightly Heavier Load
-time bin/httpTest -MaxThread=2 -in=../data/stage/http-test-file.txt > t.t
+bin/httpTest -MaxThread=2 -in=../data/stage/http-test-file.10m.txt 
+  # *1 =  RecPerSec=625 - ((1/625)*1000)/25 = 0.0645ms per oid
   # *2 = 6m21s - (((6*60)+21)*1000)/29900000 = 0.01275ms per oid
   
 # Medium Low load
-time bin/httpTest -MaxThread=4 -in=../data/stage/http-test-file.txt > t.t
+bin/httpTest -MaxThread=4 -in=../data/stage/http-test-file.10m.txt 
+  # *1 =  RecPerSec=1209 - ((1/1209)*1000)/25 = 0.033ms per oid
   # *2 = 7m15s - (((7*60)+15)*1000)/29900000= 0.01455ms per oid
 
 # Medium load
-time bin/httpTest -MaxThread=20 -in=../data/stage/http-test-file.txt > t.t
+bin/httpTest -MaxThread=20 -in=../data/stage/http-test-file.10m.txt 
+  # *1 =  RecPerSec=1833 - ((1/1833)*1000)/25 = 0.022ms per oid
+          9m6.53 29,993,508/((9*60)+53) = 50.58K lookup per sec.
+          (1/50579)*1000 = 0.0198ms per oid.
+          last reported RPS=1952 = ((1/1952)*1000)/25 = 0.0205ms per oid.
   # *2 = 4m20s - (((4*60)+20)*1000)/29900000= 0.008ms per oid
   # *3 = 1m57 - (((1*60)+75)*1000)/29900000= 0.0045ms per oid
 
 # Stress Test Load
-time bin/httpTest -MaxThread=75 -in=../data/stage/http-test-file.txt > t.t
+bin/httpTest -MaxThread=75 -in=../data/stage/http-test-file.10m.txt 
+  # *1 = RecPerSec=1807 - ((1/1807)*1000)/25 = 0.022ms per oid
   # *2 = 3m37s - (((3*60)+37)*1000)/29900000= 0.0073ms per oid
          High variablity at this load with some requests 
          reaching 300ms response time when average is abount
@@ -321,7 +335,8 @@ time bin/httpTest -MaxThread=75 -in=../data/stage/http-test-file.txt > t.t
  # *4 = 3m54s - (((3*60)+54)*1000)/90,007,790 = 0.0026ms per oid
  
 # Stress Test Load abuse
-time bin/httpTest -MaxThread=250 -in=../data/stage/http-test-file.txt > t.t
+bin/httpTest -MaxThread=250 -in=../data/stage/http-test-file.10m.txt 
+  # *1 = RecPerSec=1770 - ((1/1770)*1000)/25 = 0.023ms per oid
   # *2 = 3m26s - (((3*60)+26)*1000)/29900000= 0.0069ms per oid
          High variablity at this load with some requests 
          reaching 3000ms response time with lot over 
@@ -331,10 +346,16 @@ time bin/httpTest -MaxThread=250 -in=../data/stage/http-test-file.txt > t.t
          small amounts.  
   # *3 = 1m13s - (((1*60)+13)*1000)/29900000= 0.00244ms per oid
 
-time bin/httpTest -MaxThread=400 -in=../data/stage/http-test-file.txt > t.t
+bin/httpTest -MaxThread=400 -in=../data/stage/http-test-file.10m.txt 
+  # *1 = RecPerSec=1690 - ((1/1690)*1000)/25 = 0.024ms per oid 
   # *3 = 1m7.6s - (((1*60)+7.6)*1000)/29900000= 0.00226ms per oid
 
-time bin/httpTest -MaxThread=600 -in=../data/stage/http-test-file.txt > t.t
+time -o time.httpTest600.txt bin/httpTest -MaxThread=600 -in=../data/stage/http-test-file.10m.txt > t.t
+bin/httpTest -MaxThread=600 -in=../data/stage/http-test-file.10m.txt 
+  # *1 = 9m6.97s 29,993,508/((9*60)+6.9) = 54.842K lookup per sec.
+         (1/54842)*1000 = 0.018ms per oid.
+         last reported RPS=2117.6 = ((1/2117.6)*1000)/25 = 0.0189ms per oid.
+         which means the last records where slightly slower than first records
   # *3 = 1m5.2s - (((1*60)+5.2)*1000)/29900000= 0.00218ms per oid
 
 
