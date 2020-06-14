@@ -360,11 +360,11 @@ bin/httpTest -MaxThread=250 -in=../data/stage/http-test-file.10m.txt
          tons of postgres processes consuming relatively
          small amounts.  
   # *3 = 1m13s - (((1*60)+13)*1000)/29900000= 0.00244ms per oid
-
-nohup time -o httpTest.340m.txt bin/httpTest -MaxThread=250 -in=../data/stage/http-test-file.340m.txt > t.t
- # *4L = ..m...24s -  reported seminal rps = ...
-          1,028,993,082/((0*60*60)+(..*60)+...24) = .. recs per sec
-          (((..*60)+..)*1000)/1,028,993,082= ...ms per oid
+   # Same load but with 1 billion records loaded. 
+   nohup time -o httpTest.340m.txt bin/httpTest -MaxThread=250 -in=../data/stage/http-test-file.340m.txt > t.t
+   # *4L = 33m33.6s -  reported seminal rps = 19,678.9
+          1,028,993,082/((0*60*60)+(33*60)+33.6) = 511.02K rec per sec
+          (((33*60)+33.6)*1000)/1,028,993,082= 0.00196ms per oid
  
 
 
@@ -373,7 +373,7 @@ bin/httpTest -MaxThread=400 -in=../data/stage/http-test-file.10m.txt
   # *3 = 1m7.6s - (((1*60)+7.6)*1000)/29900000= 0.00226ms per oid
 
 nohup time -o httpTest.340m.txt bin/httpTest -MaxThread=400 -in=../data/stage/http-test-file.340m.txt > t.t
- # *4L = ..m...24s -  reported seminal rps = ...
+ # *4L =  ..m...24s -  reported seminal rps = ...
           1,028,993,082/((0*60*60)+(..*60)+...24) = .. recs per sec
           (((..*60)+..)*1000)/1,028,993,082= ...ms per oid
  
