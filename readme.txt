@@ -74,7 +74,9 @@ They assume that you are on linux or have cygwin bash installed.
      Intel SKL (SkyLake) 8160 8/4/2P 24C/48T 2.1G 33M 10.4GT
      NVMe drives - Samsung PM983, 3.84TB,NVMe,PCIe3.0x4
      With config changed recomended by pgtune.
-*4L  
+*4L  Same as #4 but wil 1 billion records 
+*4E  Same as #4L but shifted postgress to the encrypted volume
+
      
 
 
@@ -159,6 +161,7 @@ Load Postgress with the oids data
   #  *4 - 28m16s - 90,007,790 / ((28*60) + 16) - 53,070 rec per sec
   #  *4L - 7h53m49s - 1,028,993,082/((7*60*60)+(53*60)+49) -36.2K rec per sec
   #        Postgress is 207G after load completes.
+  #  *4E - 8h9m16s - 1,028,993,082/((8*60*60)+(9*60)+16) - 35.05K rec per sec
   # 
   # To load roughly 1B records into the datbase
   nohup time -o $PWD/time.load_db.340m.txt psql -U test -f data/stage/db_load.340m.sql
@@ -302,19 +305,56 @@ go get -u -t "github.com/joeatbayes/http-stress-test/httpTest"
 bin/httpTest -MaxThread=1 -in=../data/stage/http-test-file.10m.txt 
   # *1 - RecPerSec=145.3 - ((1/145.3)*1000)/25 = 0.275ms per oid
   # *2 - 19m33s - (((19*60)+30)*1000)/29900000 = 0.039ms per oid
-  # *3L -
-  # *4L -   
+  
+  
+ # *4L = ..m..s -  reported seminal rps = 14,576
+          1,028,993,082/((0*60*60)+(..*60)+..) = ... recs per sec
+          (((..*60)+..)*1000)/1,028,993,082= .....ms per oid
+ 
+ # *4L = ..m..s -  reported seminal rps = 14,576
+          1,028,993,082/((0*60*60)+(..*60)+..) = ... recs per sec
+          (((..*60)+..)*1000)/1,028,993,082= .....ms per oid
+ 
+ # *4E = ..m..s -  reported seminal rps = 14,576
+          1,028,993,082/((0*60*60)+(..*60)+..) = ... recs per sec
+          (((..*60)+..)*1000)/1,028,993,082= .....ms per oid
+ 
 
 # Slightly Heavier Load
 bin/httpTest -MaxThread=2 -in=../data/stage/http-test-file.10m.txt 
   # *1 =  RecPerSec=625 - ((1/625)*1000)/25 = 0.0645ms per oid
   # *2 = 6m21s - (((6*60)+21)*1000)/29900000 = 0.01275ms per oid
+ 
+ # *3L = ..m..s -  reported seminal rps = 14,576
+          1,028,993,082/((0*60*60)+(..*60)+..) = ... recs per sec
+          (((..*60)+..)*1000)/1,028,993,082= .....ms per oid
+ 
+ # *4L = ..m..s -  reported seminal rps = 14,576
+          1,028,993,082/((0*60*60)+(..*60)+..) = ... recs per sec
+          (((..*60)+..)*1000)/1,028,993,082= .....ms per oid
+ 
+ # *4E = ..m..s -  reported seminal rps = 14,576
+          1,028,993,082/((0*60*60)+(..*60)+..) = ... recs per sec
+          (((..*60)+..)*1000)/1,028,993,082= .....ms per oid
   
 # Medium Low load
 bin/httpTest -MaxThread=4 -in=../data/stage/http-test-file.10m.txt 
   # *1 =  RecPerSec=1209 - ((1/1209)*1000)/25 = 0.033ms per oid
   # *2 = 7m15s - (((7*60)+15)*1000)/29900000= 0.01455ms per oid
 
+ # *3L = ..m..s -  reported seminal rps = 14,576
+          1,028,993,082/((0*60*60)+(..*60)+..) = ... recs per sec
+          (((..*60)+..)*1000)/1,028,993,082= .....ms per oid
+
+ # *4L = ..m..s -  reported seminal rps = 14,576
+          1,028,993,082/((0*60*60)+(..*60)+..) = ... recs per sec
+          (((..*60)+..)*1000)/1,028,993,082= .....ms per oid
+ 
+ 
+ # *4E = ..m..s -  reported seminal rps = 14,576
+          1,028,993,082/((0*60*60)+(..*60)+..) = ... recs per sec
+          (((..*60)+..)*1000)/1,028,993,082= .....ms per oid
+ 
 # Medium load
   bin/httpTest -MaxThread=20 -in=../data/stage/http-test-file.10m.txt 
   # *1 =  RecPerSec=1833 - ((1/1833)*1000)/25 = 0.022ms per oid
@@ -324,12 +364,21 @@ bin/httpTest -MaxThread=4 -in=../data/stage/http-test-file.10m.txt
   # *2 = 4m20s - (((4*60)+20)*1000)/29900000= 0.008ms per oid
   # *3 = 1m57 - (((1*60)+75)*1000)/29900000= 0.0045ms per oid
 
+ 
   # Same thing but reading the larger dataset inut.
   #bin/httpTest -MaxThread=20 -in=../data/stage/http-test-file.340m.txt 
   nohup time -o httpTest.340m.txt bin/httpTest -MaxThread=20 -in=../data/stage/http-test-file.340m.txt > t.t
+  
+  # *3L = ..m..s -  reported seminal rps = 14,576
+          1,028,993,082/((0*60*60)+(..*60)+..) = ... recs per sec
+          (((..*60)+..)*1000)/1,028,993,082= .....ms per oid
+
   # *4L - Initial 16390 -  40m13s -  sentinal rps 16415 
           1,028,993,082/((0*60*60)+(40*60)+13) = 426.44K recs per sec
           (((40*60)+13)*1000)/1,028,993,082= 0.00235ms per oid
+  # *4E - Initial 16390 -  48m29.83s -  sentinal rps 13608 
+          1,028,993,082/((0*60*60)+(48*60)+29.83) = 353.63K recs per sec
+          (((48*60)+29.83)*1000)/1,028,993,082= 0.00283ms per oid
 
 
 # Stress Test Load
@@ -345,10 +394,20 @@ bin/httpTest -MaxThread=75 -in=../data/stage/http-test-file.10m.txt
  # *4 = 3m54s - (((3*60)+54)*1000)/90,007,790 = 0.0026ms per oid
  
  nohup time -o httpTest.340m.txt bin/httpTest -MaxThread=75 -in=../data/stage/http-test-file.340m.txt > t.t
+ 
+ # *3L = ..m..s -  reported seminal rps = 14,576
+          1,028,993,082/((0*60*60)+(..*60)+..) = ... recs per sec
+          (((..*60)+..)*1000)/1,028,993,082= .....ms per oid
+ 
  # *4L = 22m31.24s -  reported seminal rps = 14,576
           1,028,993,082/((0*60*60)+(22*60)+31.24) = 761.5K recs per sec
           (((22*60)+31)*1000)/1,028,993,082= 0.0013123ms per oid
+
+ # *4E = 44m18s -  reported seminal rps = 14,898
+          1,028,993,082/((0*60*60)+(44*60)+18) = 387.13K recs per sec
+          ((44*60)+18)*1000)/1,028,993,082=  0.00258 ms per oid
  
+
 # Stress Test Load abuse
 bin/httpTest -MaxThread=250 -in=../data/stage/http-test-file.10m.txt 
   # *1 = RecPerSec=1770 - ((1/1770)*1000)/25 = 0.023ms per oid
@@ -362,22 +421,40 @@ bin/httpTest -MaxThread=250 -in=../data/stage/http-test-file.10m.txt
   # *3 = 1m13s - (((1*60)+13)*1000)/29900000= 0.00244ms per oid
    # Same load but with 1 billion records loaded. 
    nohup time -o httpTest.340m.txt bin/httpTest -MaxThread=250 -in=../data/stage/http-test-file.340m.txt > t.t
+   
+   # *3L = ..m..s -  reported seminal rps = 14,576
+          1,028,993,082/((0*60*60)+(..*60)+..) = ... recs per sec
+          (((..*60)+..)*1000)/1,028,993,082= .....ms per oid
+ 
    # *4L = 33m33.6s -  reported seminal rps = 19,678.9
           1,028,993,082/((0*60*60)+(33*60)+33.6) = 511.02K rec per sec
           (((33*60)+33.6)*1000)/1,028,993,082= 0.00196ms per oid
- 
+  # *4E = 33m52.4s -  reported seminal rps = 19,494 Rec per sec....
+          1,028,993,082/((0*60*60)+(33*60)+52.4) = 506,294 oids recs per sec
+          (((33*60)+52.4)*1000)/1,028,993,082= 0.001975ms per oid
 
 
 bin/httpTest -MaxThread=400 -in=../data/stage/http-test-file.10m.txt 
   # *1 = RecPerSec=1690 - ((1/1690)*1000)/25 = 0.024ms per oid 
   # *3 = 1m7.6s - (((1*60)+7.6)*1000)/29900000= 0.00226ms per oid
 
+ 
+
 nohup time -o httpTest.340m.txt bin/httpTest -MaxThread=400 -in=../data/stage/http-test-file.340m.txt > t.t
+
+ # *3L = ..m..s -  reported seminal rps = 14,576
+          1,028,993,082/((0*60*60)+(..*60)+..) = ... recs per sec
+          (((..*60)+..)*1000)/1,028,993,082= .....ms per oid
+ 
  # *4L =  ..m...24s -  reported seminal rps = ...
           1,028,993,082/((0*60*60)+(..*60)+...24) = .. recs per sec
           (((..*60)+..)*1000)/1,028,993,082= ...ms per oid
  
 
+ # *4E = 25m25.6 -  reported seminal rps = 25,982
+          1,028,993,082/((0*60*60)+(25*60)+25.68) =  674,448.82 recs per sec
+          (((25*60)+25.6)*1000)/1,028,993,082=  0.00148ms per oid
+ 
 
 time -o time.httpTest600.txt bin/httpTest -MaxThread=600 -in=../data/stage/http-test-file.10m.txt > t.t
 bin/httpTest -MaxThread=600 -in=../data/stage/http-test-file.10m.txt 
@@ -388,10 +465,20 @@ bin/httpTest -MaxThread=600 -in=../data/stage/http-test-file.10m.txt
   # *3 = 1m5.2s - (((1*60)+5.2)*1000)/29900000= 0.00218ms per oid
 
 nohup time -o httpTest.340m.txt bin/httpTest -MaxThread=600 -in=../data/stage/http-test-file.340m.txt > t.t
+
+ # *3L = ..m..s -  reported seminal rps = 14,576
+          1,028,993,082/((0*60*60)+(..*60)+..) = ... recs per sec
+          (((..*60)+..)*1000)/1,028,993,082= .....ms per oid
+ 
  # *4L = ..m...24s -  reported seminal rps = ...
           1,028,993,082/((0*60*60)+(..*60)+...24) = .. recs per sec
           (((..*60)+..)*1000)/1,028,993,082= ...ms per oid
  
+ 
+ # *4E = ..m...24s -  reported seminal rps = ...
+          1,028,993,082/((0*60*60)+(..*60)+...24) = .. recs per sec
+          (((..*60)+..)*1000)/1,028,993,082= ...ms per oid
+
 
 
 # Note: When I tested with 750 connections I got errors in the server too many open 
@@ -651,7 +738,9 @@ sudo yum install golang-vim.noarch golang.x86_64
  sudo rpm -i postgresql12-12.3-1PGDG.rhel7.x86_64.rpm
  sudo rpm -i postgresql12-server-12.3-1PGDG.rhel7.x86_64.rpm
  sudo rpm -i postgresql12-contrib-12.3-1PGDG.rhel7.x86_64.rpm
-Install Direcory is /usr/pgsql-12
+ 
+
+#Install Direcory is /usr/pgsql-12
 sudo mkdir /data2/pg12data
 sudo chown jellsworth:games /data2/pg12data
 # initdb command explained https://www.postgresql.org/docs/12/app-initdb.html

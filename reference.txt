@@ -56,3 +56,4 @@ Claims to deliver 10X faster server in GO - https://husobee.github.io/golang/fas
 
 https://www.postgresql.org/docs/12/server-start.html
 
+Enable SSL on GoLang server - https://golangcode.com/basic-https-server-with-certificate/ https://gist.github.com/denji/12b3a568f092ab951456
