@@ -176,7 +176,9 @@ Load Postgress with the oids data
 
   # Produce test script for roughly 1B records
   nohup time -o $PWD/time.create_http_test.340m.txt python create_http_test_script.py $PWD/data/stage/generated_oids.340m.map.txt $PWD/data/stage/http-test-file.340m.txt
-  # *4 - 22m31.34s - 1,028,993,082/((0*60*60)+(22*60)+31.34) = 761.5K rec per sec.
+  # *3L - 34m50s - 1,028,993,082/((0*60*60)+(34*60)+50) = 492.34K recs per sec. 
+  # *4L - 22m31.34s - 1,028,993,082/((0*60*60)+(22*60)+31.34) = 761.5K rec per sec.
+  
 
 ## OBSOLETE ##
 #Generate the file containing queries to test obtaining the distinct 
@@ -311,7 +313,7 @@ bin/httpTest -MaxThread=1 -in=../data/stage/http-test-file.10m.txt
           1,028,993,082/((0*60*60)+(..*60)+..) = ... recs per sec
           (((..*60)+..)*1000)/1,028,993,082= .....ms per oid
  
- # *4L = ..m..s -  reported seminal rps = 14,576
+ # *4L = ..m..s -  reported start rp=4,745 end rps= 14,576
           1,028,993,082/((0*60*60)+(..*60)+..) = ... recs per sec
           (((..*60)+..)*1000)/1,028,993,082= .....ms per oid
  
@@ -352,6 +354,7 @@ bin/httpTest -MaxThread=4 -in=../data/stage/http-test-file.10m.txt
  
  
  # *4E = ..m..s -  reported seminal rps = 14,576
+          Init rps 4783.  
           1,028,993,082/((0*60*60)+(..*60)+..) = ... recs per sec
           (((..*60)+..)*1000)/1,028,993,082= .....ms per oid
  
@@ -369,9 +372,9 @@ bin/httpTest -MaxThread=4 -in=../data/stage/http-test-file.10m.txt
   #bin/httpTest -MaxThread=20 -in=../data/stage/http-test-file.340m.txt 
   nohup time -o httpTest.340m.txt bin/httpTest -MaxThread=20 -in=../data/stage/http-test-file.340m.txt > t.t
   
-  # *3L = ..m..s -  reported seminal rps = 14,576
-          1,028,993,082/((0*60*60)+(..*60)+..) = ... recs per sec
-          (((..*60)+..)*1000)/1,028,993,082= .....ms per oid
+  # *3L = 77m19s -  reported start rps = 14,576.  End rps=8,531
+          1,028,993,082/(77*60)+19) = 222.7K recs per sec
+          (((77*60)+19)*1000)/1,028,993,082= 0.0045ms per oid
 
   # *4L - Initial 16390 -  40m13s -  sentinal rps 16415 
           1,028,993,082/((0*60*60)+(40*60)+13) = 426.44K recs per sec
@@ -475,9 +478,9 @@ nohup time -o httpTest.340m.txt bin/httpTest -MaxThread=600 -in=../data/stage/ht
           (((..*60)+..)*1000)/1,028,993,082= ...ms per oid
  
  
- # *4E = ..m...24s -  reported seminal rps = ...
-          1,028,993,082/((0*60*60)+(..*60)+...24) = .. recs per sec
-          (((..*60)+..)*1000)/1,028,993,082= ...ms per oid
+ # *4E = 21m44.2s -  reported seminal rps = 30,345
+          1,028,993,082/((0*60*60)+(21*60)+44.2) = 788.98K recs per sec
+          (((21*60)+44.2)*1000)/1,028,993,082=  0.001267ms per oid
 
 
 
