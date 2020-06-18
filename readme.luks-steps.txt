@@ -1,4 +1,20 @@
-Steps Modified for LUKS volume
+##################
+## Steps to switch between two different 
+## database files for primary postgress
+## Listener
+##################
+# This version de-activates the DB running on the 
+# encrypted file system and moves back to the 
+# non-encrypted version
+# Stop the version running on Encrypted version
+/usr/pgsql-12/bin/pg_ctl -D /data1/pg12data -l logfile2 stop
+# Start the verison running against the non-encrypted volume
+/usr/pgsql-12/bin/pg_ctl -D /data2/pg12data -l logfile2 start
+
+
+##################
+## Steps Modified for LUKS volume
+##################
 
 # Stop postgress if already running in the other directory.
 /usr/pgsql-12/bin/pg_ctl -D /data2/pg12data -l logfile2 stop

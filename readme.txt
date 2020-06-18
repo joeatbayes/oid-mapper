@@ -313,13 +313,14 @@ bin/httpTest -MaxThread=1 -in=../data/stage/http-test-file.10m.txt
           1,028,993,082/((0*60*60)+(..*60)+..) = ... recs per sec
           (((..*60)+..)*1000)/1,028,993,082= .....ms per oid
  
- # *4L = ..m..s -  reported start rp=4,745 end rps= 14,576
+ # *4L = ..m..s -  reported start rp=4,745 end rps= ...
           1,028,993,082/((0*60*60)+(..*60)+..) = ... recs per sec
           (((..*60)+..)*1000)/1,028,993,082= .....ms per oid
  
- # *4E = ..m..s -  reported seminal rps = 14,576
-          1,028,993,082/((0*60*60)+(..*60)+..) = ... recs per sec
-          (((..*60)+..)*1000)/1,028,993,082= .....ms per oid
+ # *4E = 9h5m10s -  reported ending rps = 1209.9
+          end elap = 0.58ms to 0.93ms mostly in 0.78ms.
+          1,028,993,082/((9*60*60)+(5*60)+10) = 31.46K recs per sec
+          (((545*60)+10)*1000)/1,028,993,082  = 0.0318ms per oid
  
 
 # Slightly Heavier Load
@@ -327,36 +328,42 @@ bin/httpTest -MaxThread=2 -in=../data/stage/http-test-file.10m.txt
   # *1 =  RecPerSec=625 - ((1/625)*1000)/25 = 0.0645ms per oid
   # *2 = 6m21s - (((6*60)+21)*1000)/29900000 = 0.01275ms per oid
  
- # *3L = ..m..s -  reported seminal rps = 14,576
+  nohup time -o httpTest.340m.txt bin/httpTest -MaxThread=2 -in=../data/stage/http-test-file.340m.txt > t.t
+ # *3L = ..m..s -  start reported rps=934.6  reported seminal rps = 
+          start elap 1.22ms to 3.3ms
           1,028,993,082/((0*60*60)+(..*60)+..) = ... recs per sec
           (((..*60)+..)*1000)/1,028,993,082= .....ms per oid
  
- # *4L = ..m..s -  reported seminal rps = 14,576
+ # *4L = ..m..s -  reported start rp=4,745 end rps= ...
           1,028,993,082/((0*60*60)+(..*60)+..) = ... recs per sec
           (((..*60)+..)*1000)/1,028,993,082= .....ms per oid
+  
+ # *4E = 4h32m21s -  reported seminal rps = 2,422
+          elap = 0.76ms to 0.83ms
+          1,028,993,082/((4*60*60)+(32*60)+21) = 92,9K recs per sec
+          (((272*60)+21)*1000)/1,028,993,082 = 0.0159 ms per oid
  
- # *4E = ..m..s -  reported seminal rps = 14,576
-          1,028,993,082/((0*60*60)+(..*60)+..) = ... recs per sec
-          (((..*60)+..)*1000)/1,028,993,082= .....ms per oid
+ 
   
 # Medium Low load
 bin/httpTest -MaxThread=4 -in=../data/stage/http-test-file.10m.txt 
   # *1 =  RecPerSec=1209 - ((1/1209)*1000)/25 = 0.033ms per oid
   # *2 = 7m15s - (((7*60)+15)*1000)/29900000= 0.01455ms per oid
-
- # *3L = ..m..s -  reported seminal rps = 14,576
+  
+  # nohup time -o httpTest.340m.txt bin/httpTest -MaxThread=4 -in=../data/stage/http-test-file.340m.txt > t.t
+  # *3L = 230m40s -  reported seminal rps = 2859.6
+          elap 1.079s to 2.265s
+          1,028,993,082/((3*60*60)+(50*60)+40) = 74.35K. recs per sec
+          (((230*60)+40)*1000)/1,028,993,082=  0.01345ms per oid
+          
+  # *4L = ..m..s -  reported seminal rps = 14,576
           1,028,993,082/((0*60*60)+(..*60)+..) = ... recs per sec
           (((..*60)+..)*1000)/1,028,993,082= .....ms per oid
-
- # *4L = ..m..s -  reported seminal rps = 14,576
-          1,028,993,082/((0*60*60)+(..*60)+..) = ... recs per sec
-          (((..*60)+..)*1000)/1,028,993,082= .....ms per oid
- 
- 
- # *4E = ..m..s -  reported seminal rps = 14,576
-          Init rps 4783.  
-          1,028,993,082/((0*60*60)+(..*60)+..) = ... recs per sec
-          (((..*60)+..)*1000)/1,028,993,082= .....ms per oid
+          
+  # *4E = 2h18m21s -  reported seminal rps = 4,768.6
+          Elap 0.78ms to 1.17ms   
+          1,028,993,082/((2*60*60)+(18*60)+21) = 123.96K recs per sec
+          (((138*60)+18)*1000)/1,028,993,082= 0.00806ms per oid
  
 # Medium load
   bin/httpTest -MaxThread=20 -in=../data/stage/http-test-file.10m.txt 
@@ -379,6 +386,7 @@ bin/httpTest -MaxThread=4 -in=../data/stage/http-test-file.10m.txt
   # *4L - Initial 16390 -  40m13s -  sentinal rps 16415 
           1,028,993,082/((0*60*60)+(40*60)+13) = 426.44K recs per sec
           (((40*60)+13)*1000)/1,028,993,082= 0.00235ms per oid
+          
   # *4E - Initial 16390 -  48m29.83s -  sentinal rps 13608 
           1,028,993,082/((0*60*60)+(48*60)+29.83) = 353.63K recs per sec
           (((48*60)+29.83)*1000)/1,028,993,082= 0.00283ms per oid
@@ -398,11 +406,13 @@ bin/httpTest -MaxThread=75 -in=../data/stage/http-test-file.10m.txt
  
  nohup time -o httpTest.340m.txt bin/httpTest -MaxThread=75 -in=../data/stage/http-test-file.340m.txt > t.t
  
- # *3L = ..m..s -  reported seminal rps = 14,576
-          1,028,993,082/((0*60*60)+(..*60)+..) = ... recs per sec
-          (((..*60)+..)*1000)/1,028,993,082= .....ms per oid
+ # *3L = 71m57s -  reported start rps = 14,576 end rep=9,170
+          1,028,993,082/((71*60)+57) = 238.36K recs per sec
+          (((71*60)+57)*1000)/1,028,993,082=  0.0042ms per oid
  
- # *4L = 22m31.24s -  reported seminal rps = 14,576
+ # *4L = 22m31.24s -  start RPS = 15,167.2 end rps = ...
+          start elap= 1.03ms to 9.4ms
+          load average: 34.52
           1,028,993,082/((0*60*60)+(22*60)+31.24) = 761.5K recs per sec
           (((22*60)+31)*1000)/1,028,993,082= 0.0013123ms per oid
 
@@ -425,13 +435,17 @@ bin/httpTest -MaxThread=250 -in=../data/stage/http-test-file.10m.txt
    # Same load but with 1 billion records loaded. 
    nohup time -o httpTest.340m.txt bin/httpTest -MaxThread=250 -in=../data/stage/http-test-file.340m.txt > t.t
    
-   # *3L = ..m..s -  reported seminal rps = 14,576
-          1,028,993,082/((0*60*60)+(..*60)+..) = ... recs per sec
-          (((..*60)+..)*1000)/1,028,993,082= .....ms per oid
+  # *3L = 67m54s -  reported end rps = 9713.6
+          end elap = 15ms to 36ms
+          1,028,993,082/(+(67*60)+54) = 252.57K recs per sec
+          (((67*60)+54)*1000)/1,028,993,082= 0.00396ms per oid
  
-   # *4L = 33m33.6s -  reported seminal rps = 19,678.9
-          1,028,993,082/((0*60*60)+(33*60)+33.6) = 511.02K rec per sec
-          (((33*60)+33.6)*1000)/1,028,993,082= 0.00196ms per oid
+  # *4L = 32m04.5 -  reported start rps=20,794 end rps = 20,591
+          start elap = 2.14ms to 15.4ms  end elap= 13.7ms to 20.2ms
+          load average = 48.96
+          1,028,993,082/((0*60*60)+(32*60)+04.5) = 534,680K rec per sec
+          (((33*60)+33.6)*1000)/1,028,993,082= 0.001957ms per oid
+          
   # *4E = 33m52.4s -  reported seminal rps = 19,494 Rec per sec....
           1,028,993,082/((0*60*60)+(33*60)+52.4) = 506,294 oids recs per sec
           (((33*60)+52.4)*1000)/1,028,993,082= 0.001975ms per oid
@@ -441,20 +455,20 @@ bin/httpTest -MaxThread=400 -in=../data/stage/http-test-file.10m.txt
   # *1 = RecPerSec=1690 - ((1/1690)*1000)/25 = 0.024ms per oid 
   # *3 = 1m7.6s - (((1*60)+7.6)*1000)/29900000= 0.00226ms per oid
 
+  nohup time -o httpTest.340m.txt bin/httpTest -MaxThread=400 -in=../data/stage/http-test-file.340m.txt > t.t
  
-
-nohup time -o httpTest.340m.txt bin/httpTest -MaxThread=400 -in=../data/stage/http-test-file.340m.txt > t.t
-
- # *3L = ..m..s -  reported seminal rps = 14,576
-          1,028,993,082/((0*60*60)+(..*60)+..) = ... recs per sec
-          (((..*60)+..)*1000)/1,028,993,082= .....ms per oid
+  # *3L =  66m23 -  reported end rps =9,940
+          end elap 35ms to 85ms
+          1,028,993,082/((66*60)+23) = 258.35K recs per sec
+          (((66*60)+23)*1000)/1,028,993,082= 0.00387 ms per oid
  
- # *4L =  ..m...24s -  reported seminal rps = ...
-          1,028,993,082/((0*60*60)+(..*60)+...24) = .. recs per sec
-          (((..*60)+..)*1000)/1,028,993,082= ...ms per oid
- 
+  # *4L = 24m50.68s -  start reported rps = 26,502, end rps= 26,592
+          start elap 1.5ms to 32.7ms end elap = 15.5ms to 20.26ms
+          load average = 61.6
+          1,028,993,082/((0*60*60)+(24*60)+50.68) = 690,284.35 recs per sec
+          (((24*60)+50.68)*1000)/1,028,993,082= 0.00145 ms per oid
 
- # *4E = 25m25.6 -  reported seminal rps = 25,982
+  # *4E = 25m25.6 -  reported seminal rps = 25,982
           1,028,993,082/((0*60*60)+(25*60)+25.68) =  674,448.82 recs per sec
           (((25*60)+25.6)*1000)/1,028,993,082=  0.00148ms per oid
  
@@ -467,15 +481,18 @@ bin/httpTest -MaxThread=600 -in=../data/stage/http-test-file.10m.txt
          which means the last records where slightly slower than first records
   # *3 = 1m5.2s - (((1*60)+5.2)*1000)/29900000= 0.00218ms per oid
 
-nohup time -o httpTest.340m.txt bin/httpTest -MaxThread=600 -in=../data/stage/http-test-file.340m.txt > t.t
+  nohup time -o httpTest.340m.txt bin/httpTest -MaxThread=600 -in=../data/stage/http-test-file.340m.txt > t.t
 
- # *3L = ..m..s -  reported seminal rps = 14,576
-          1,028,993,082/((0*60*60)+(..*60)+..) = ... recs per sec
-          (((..*60)+..)*1000)/1,028,993,082= .....ms per oid
+ # *3L = 66m20s -  starting rps=9,304,  end rps= 9,947
+         numfail=1172
+         start elap= 13.9ms to 150.7ms end elap=60ms to 1503ms
+         1,028,993,082/((66*60)+20) = 258.5K recs per sec
+         (((66*60)+20)*1000)/1,028,993,082= 0.00387ms per oid
  
- # *4L = ..m...24s -  reported seminal rps = ...
-          1,028,993,082/((0*60*60)+(..*60)+...24) = .. recs per sec
-          (((..*60)+..)*1000)/1,028,993,082= ...ms per oid
+ # *4L = 22m.51.4s -  reported rps = 28,912
+          end elap = 18.58ms to 41.6ms 
+          1,028,993,082/((0*60*60)+(22*60)+51) = 750,542 recs per sec
+          (((22*60)+51.4)*1000)/1,028,993,082= 0.00133 ms per oid
  
  
  # *4E = 21m44.2s -  reported seminal rps = 30,345
