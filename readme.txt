@@ -77,7 +77,7 @@ They assume that you are on linux or have cygwin bash installed.
 *4L  Same as #4 but wil 1 billion records 
 *4E  Same as #4L but shifted postgress to the encrypted volume
 *5L  Intel NUC8i5BEH 64Ram, Intel  Intel® Core™ i5-8259U Processor
-           4 cores, 8 threads.  
+           4 cores, 8 threads.  2TB NVME,  4TB SATA SSD.
 
      
 

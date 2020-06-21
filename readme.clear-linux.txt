@@ -3,6 +3,7 @@
 
 # Command line to install other needed packages
 sudo swupd bundle-add wget vim
+sudo swupd bundle-add clr-network-troubleshooter
 sudo swupd bundle-add wget notepadqq
 sudo swupd bundle-add postgresql12
 sudo swupd bundle-add geany
@@ -10,6 +11,12 @@ sudo swupd bundle-add wget
 sudo swupd bundle-add java13-basic
 # NOTE:  Java command line is called java13 rather than java
 #  and java compiler is javac13
+
+# Enable local host lookup  # https://www.ionos.com/digitalguide/server/know-how/localhost/
+sudo vi /etc/hosts
+# Add the following lines 
+127.0.0.1             localhost
+::1                   localhost
 
 #
 # Download and install GO following instructions at: https://golang.org/doc/install?download=go1.14.4.linux-amd64.tar.gz

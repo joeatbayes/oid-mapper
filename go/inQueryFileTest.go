@@ -18,9 +18,9 @@ import (
 )
  
 const (
-    host            = "localhost"
+    host            = "127.0.0.1"
     port             = 5432
-    defaultUser  = "postgres"
+    defaultUser  = "test"
     defaultPass = "test"
     dbname       = "oidmap"
 )
@@ -47,7 +47,7 @@ func main() {
     if ospass < " " { ospass =  defaultPass }
     
     psqlconn := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable", host, port, osuser, ospass, dbname)
-         
+    fmt.Println("L50: psqlconn=", psqlconn)
         // open database
     db, err := sql.Open("postgres", psqlconn)
     CheckError(err)
