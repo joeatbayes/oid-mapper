@@ -170,3 +170,6 @@ generated_oids.map.txt
 data/stage/db_load.*.sql
 generated_oids.*.map.txt
 data/stage/http-test-file.*.txt
+time.generateoids.*.txt
+
+
