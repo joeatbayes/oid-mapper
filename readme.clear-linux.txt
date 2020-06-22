@@ -19,7 +19,7 @@ sudo vi /etc/hosts
 127.0.0.1             localhost
 ::1                   localhost
 
-#
+
 # Download and install GO following instructions at: https://golang.org/doc/install?download=go1.14.4.linux-amd64.tar.gz
 # Can not use default version becuase it is too old.
 wget https://dl.google.com/go/go1.14.4.linux-amd64.tar.gz
@@ -31,13 +31,19 @@ vi $HOME/.profile
   export PATH=$PATH:/usr/libexec/postgresql12/
 source  $HOME/.profile
 
+############
+## Postgress Setup
+############
+# NOTE: /data1 was mapped to SATA SSD
+
+
 sudo mkdir /data1/pg12data
-sudo chown jwork:jwork /data1/pg12data
+sudo chown $USER:$USER /data1/pg12data
 # initdb command explained https://www.postgresql.org/docs/12/app-initdb.html
 /usr/libexec/postgresql12/initdb -D /data1/pg12data
 sudo chmod a+rw /run/postgresql12/
 /usr/libexec/postgresql12/pg_ctl -D /data1/pg12data -l logfile start
-/usr/libexec/postgresql12/createdb jwork
+/usr/libexec/postgresql12/createdb $USER
 # createdb explained: https://www.postgresql.org/docs/12/app-createdb.html
 
 psql -c "SELECT version();"
@@ -49,8 +55,10 @@ psql -c "CREATE DATABASE test WITH OWNER test;"
 # named data directory used above.  In this instance
 # They are /data1/pg12data/
 
-
-# Edit the file /data2/pg12data/pg_hba.conf
+######
+# Edit the Postgress Config Files
+######
+# Edit the file /data1/pg12data/pg_hba.conf
    vi /data1/pg12data/pg_hba.conf
    # Add the following lines before the line that defines
    # local all so it looks like 
@@ -103,70 +111,31 @@ psql -U test -f create_db.sql
 # Follow instructions in main readme.txt
 # under Basic Setup / Generate sample oids mapping file:
 
+#################
+## Posgress SQL - Setup for NVME Device
+#################
+pg_ctl -D /data1/pg12data -l logfile stop
+source $HOME/.profile
+sudo mkdir /data
+sudo mkdir /data/pg12data
+sudo chown $USER:$USER /data/pg12data
+# initdb command explained https://www.postgresql.org/docs/12/app-initdb.html
+initdb -D /data/pg12data
+sudo chmod a+rw /run/postgresql12/
 
-####################################################
-## Build Postgress as Docker Image 
-####################################################
+# Edit The postgress config files as shown above
+# Except we will use /data where our NVME is mounted
+# rather than /data1 where the SSD sata drive is 
+# mounted.
+  vi /data/pg12data/pg_hba.conf
+  vi /data/pg12data/postgresql.conf
 
-# Install support for Local Docker
-  #https://docs.01.org/clearlinux/latest/tutorials/docker.html
-  #https://docs.01.org/clearlinux/latest/tutorials/kata.html
-  sudo swupd bundle-add containers-virt
-  sudo swupd bundle-add containers-basic
+pg_ctl -D /data/pg12data -l logfile start
+createdb $USER
+# createdb explained: https://www.postgresql.org/docs/12/app-createdb.html
+psql -c "SELECT version();"
+  # Should show the Database version which should be 12.3
+psql -c "CREATE ROLE test WITH LOGIN CREATEDB ENCRYPTED PASSWORD 'test';"
+psql -c "CREATE DATABASE test WITH OWNER test;"
 
-  sudo systemctl start docker
-  sudo systemctl enable docker
-
-  # To run container as Kata Container instead as normal container
-  https://docs.01.org/clearlinux/latest/tutorials/kata.html#kata
-
-  
-  #######
-  # With Default Ubuntu Docker Image
-  #######
-  # cd to directory where you downloaded oidmap  eg: $HOME/oidmap
-  cd docker-ubuntu/
-  docker build --tag docker-ubuntu . 
-  
-  # Most simple run.  Attached foreground and the ports
-  # to access docker are not exposed. 
-  sudo docker run --name bb docker-ubuntu:latest
-
-  # Run with Port 5432 exposed as 5532 to allow 
-  # external access.
-  # cd to directory where you downloaded oidmap  eg: $HOME/oidmap
-  cd docker-ubuntu/
-  sudo docker rm --force bb
-    # Delete last running image at name bb
-  sudo docker run --publish 5532:5432 --name bb docker-ubuntu:latest
-    # Publish traffic from host 5532 to containers port 5432
- 
-  # https://docs.docker.com/get-started/part2/
-  # https://docs.01.org/clearlinux/latest/tutorials/kata.html#kata
-  # https://docs.docker.com/engine/examples/postgresql_service/
-    # container linking ports
-	# connect from host
-	# Using container volumes to nspec log files
-	# Change config files of running image https://ligerlearn.com/how-to-edit-files-within-docker-containers/
-	# Create docker config values using docker config https://medium.com/better-programming/about-using-docker-config-e967d4a74b83
-	# Set enviornment variables using docker https://code.visualstudio.com/docs/remote/containers-advanced
-	# Sample go based docker config for httpServer https://github.com/joeatbayes/metadata-forms-gui/blob/master/Dockerfile
-	# Example of pulling from clearlinux as base for docker image https://github.com/clearlinux/dockerfiles/blob/master/mariadb/Dockerfile
-	
-	
-	
-
-  #######
-  #  Build and Run Clear Linux Docker file
-  #######
-   # See: https://raw.githubusercontent.com/clearlinux/dockerfiles/master/postgres/Dockerfile which
-   #  is the starting point for the Dockerfile we edited.
-   cd $HOME/oidmap
-   cd docker-postgress-clear/
-   sudo docker build --tag docker-postgress-clear . 
-   
-   cd docker-postgress-clear/
-
-
-  
-
+pg_ctl -D /data/pg12data -l logfile3 start

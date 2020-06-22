@@ -76,10 +76,14 @@ They assume that you are on linux or have cygwin bash installed.
      With config changed recomended by pgtune.
 *4L  Same as #4 but wil 1 billion records 
 *4E  Same as #4L but shifted postgress to the encrypted volume
-*5L  Intel NUC8i5BEH 64Ram, Intel  Intel® Core™ i5-8259U Processor
+*5L  Intel NUC8i5BEH 64GB Ram, Intel  Intel® Core™ i5-8259U Processor@2.3Ghtz
            4 cores, 8 threads.  2TB NVME,  4TB SATA SSD.
-
-     
+		   Installed with Clear Linux  build 33410
+		   System installed on NVME drive.  Data was tested
+		   on the SATA SSD. The oidmap directory on NVME
+*5N  Same as 5L except the database directory moved onto the NVME drive 
+       rather than the sata SSD drive.
+  
 
 
 ############
@@ -117,7 +121,10 @@ Generate sample oids mapping file:
   #       1,028,993,082/((10*60*60)+(2*60)+20)= 28.47K recs per sec
   # To generate roughly 1 billion records 
   nohup time -o $PWD/time.generateoids.340m.txt python $PWD/generateoids.py 343000000 $PWD/data/stage/generated_oids.340m.map.txt
+  # *5L - 1h49m23s - to generate 1,028,951,480 records.
+  #       1,028,951,480/((1*60*60)+(49*60)+23) = 156.78K rec per sec
   
+	
 Convert the oids file data file into a SQL command file to feed into postgress
   #time python create_db_load.py data/stage/generated_oids.10m.map.txt data/stage/db_load.10m.sql
   nohup time -o $PWD/time.create_db.10m.txt python create_db_load.py $PWD/data/stage/generated_oids.10m.map.txt $PWD/data/stage/db_load.10m.sql
@@ -135,6 +142,8 @@ Convert the oids file data file into a SQL command file to feed into postgress
   #
   # To generate SQL to Load the aprox 1 billion records 
   nohup time -o $PWD/time.create_db.340m.txt python create_db_load.py data/stage/generated_oids.340m.map.txt data/stage/db_load.340m.sql
+  # *5L - 23m29.32s - 1,028,951,480 / ((0*60*60)+(23*60)+29.32) = 730.1K per sec
+  
   
   
 Load Postgress with the oids data 
@@ -167,6 +176,8 @@ Load Postgress with the oids data
   # 
   # To load roughly 1B records into the datbase
   nohup time -o $PWD/time.load_db.340m.txt psql -U test -f data/stage/db_load.340m.sql
+  # *5L - 
+  # *5N
   
 
 # Produce the test script for httpTester to exercise ther server
@@ -180,6 +191,8 @@ Load Postgress with the oids data
   nohup time -o $PWD/time.create_http_test.340m.txt python create_http_test_script.py $PWD/data/stage/generated_oids.340m.map.txt $PWD/data/stage/http-test-file.340m.txt
   # *3L - 34m50s - 1,028,993,082/((0*60*60)+(34*60)+50) = 492.34K recs per sec. 
   # *4L - 22m31.34s - 1,028,993,082/((0*60*60)+(22*60)+31.34) = 761.5K rec per sec.
+
+  
   
 
 ## OBSOLETE ##
