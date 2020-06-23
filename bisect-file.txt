@@ -1,0 +1,22 @@
+# Increase size of tmp you will need at least twice
+# the size of the largest file to be sorted
+ sudo mount -o remount,size=500G /tmp/
+
+# Clean up old sort files left over when
+# sort has aborted
+  rm /tmp/sort*
+  
+# You will need space on tmp that is at least
+# twice the size of the largest file being sorted
+df -h /tmp
+
+Basic Linux Sort on 89GB input file with 1.043B record sorted with  
+  # http://www.theunixschool.com/2012/08/linux-sort-command-examples.html
+  time sort data/stage/generated_oids.340m.map.txt > t.sort 
+  3m31 sec.
+  Sort on child oid, par oid, child tbl, par table 
+  time sort -t"," -k4,4 -k2,2 -k3,3 -k1,1  data/stage/generated_oids.340m.map.txt > t.sort 
+  1.m37.73 sec.
+  It occupies 100% of CPU on all cores while running. So would need to run as nice.
+  
+time sort -S2G --parallel=5 -o t.sort data/stage/generated_oids.340m.map.txt 

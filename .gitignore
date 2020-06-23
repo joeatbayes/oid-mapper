@@ -173,5 +173,7 @@ data/stage/http-test-file.*.txt
 time.generateoids.*.txt
 time.create_db.*.txt
 time.load_db.*.txt
+logfile*
+t.sort
 
 

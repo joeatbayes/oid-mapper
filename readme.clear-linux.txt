@@ -13,6 +13,10 @@ sudo swupd bundle-add java13-basic
 # NOTE:  Java command line is called java13 rather than java
 #  and java compiler is javac13
 
+# Mount our 2nd hard disk as /disk1
+sudo mount /dev/sda1 /data1
+
+
 # Enable local host lookup  # https://www.ionos.com/digitalguide/server/know-how/localhost/
 sudo vi /etc/hosts
 # Add the following lines 
@@ -96,6 +100,7 @@ max_worker_processes = 8
 max_parallel_workers_per_gather = 4
 max_parallel_workers = 8
 max_parallel_maintenance_workers = 4
+checkpoint_flush_after = 255
 
 # Restart the server # https://www.postgresql.org/docs/12/app-pg-ctl.html
 pg_ctl -D /data1/pg12data -l logfile2 restart
@@ -118,6 +123,8 @@ pg_ctl -D /data1/pg12data -l logfile stop
 source $HOME/.profile
 sudo mkdir /data
 sudo mkdir /data/pg12data
+cd $HOME/oidmap 
+  # or the directory where you downloaded oidmap
 sudo chown $USER:$USER /data/pg12data
 # initdb command explained https://www.postgresql.org/docs/12/app-initdb.html
 initdb -D /data/pg12data
@@ -129,7 +136,8 @@ sudo chmod a+rw /run/postgresql12/
 # mounted.
   vi /data/pg12data/pg_hba.conf
   vi /data/pg12data/postgresql.conf
-
+  
+sudo chmod -R a+rw /run/postgresql12
 pg_ctl -D /data/pg12data -l logfile start
 createdb $USER
 # createdb explained: https://www.postgresql.org/docs/12/app-createdb.html
@@ -137,5 +145,7 @@ psql -c "SELECT version();"
   # Should show the Database version which should be 12.3
 psql -c "CREATE ROLE test WITH LOGIN CREATEDB ENCRYPTED PASSWORD 'test';"
 psql -c "CREATE DATABASE test WITH OWNER test;"
+psql -c "SHOW data_directory;"
 
-pg_ctl -D /data/pg12data -l logfile3 start
+# Load Data and test as shown in the Basic setup section
+# of readme.txt

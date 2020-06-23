@@ -30,13 +30,13 @@ def processFile(fname, fout):
        chiltbl = flds[2]
        chiloid = flds[3]
        fout.write("SELECT DISTINCT paroid, partbl FROM omap WHERE omap.chiloid="
-               + quote(chiloid) + " AND omap.chiltbl=" + quote(chiltbl) + ";\n")  
-     else: 
+               + quote(chiloid) + " AND omap.chiltbl=" + quote(chiltbl) + ";\n")
+     else:
          break
-     
+
 
 # MAIN
-def printMsg(): 
+def printMsg():
   print("Usage:  python generateSimpleQueries.py inFiName outFiName")
 
 
@@ -47,11 +47,11 @@ foutName = sys.argv[2]
 fout = open(foutName, "w")
 fout.write("\\c oidmap\n\o data/log/simple_query.RESULTS.txt\n")
 fnameIn = sys.argv[1]
-print ("inFiName=", fnameIn, "outFiName=", foutName) 
+print ("inFiName=", fnameIn, "outFiName=", foutName)
 if not os.path.isfile(fnameIn):
   printMsg()
   raise ValueError("Could not find file " + str(fnameIn))
 processFile(fnameIn, fout)
-                        
+
 
 

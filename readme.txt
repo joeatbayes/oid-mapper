@@ -176,8 +176,8 @@ Load Postgress with the oids data
   # 
   # To load roughly 1B records into the datbase
   nohup time -o $PWD/time.load_db.340m.txt psql -U test -f data/stage/db_load.340m.sql
-  # *5L - 
-  # *5N
+  # *5L - 24h10m04s - 
+  # *5N - 
   
 
 # Produce the test script for httpTester to exercise ther server
@@ -192,8 +192,6 @@ Load Postgress with the oids data
   # *3L - 34m50s - 1,028,993,082/((0*60*60)+(34*60)+50) = 492.34K recs per sec. 
   # *4L - 22m31.34s - 1,028,993,082/((0*60*60)+(22*60)+31.34) = 761.5K rec per sec.
 
-  
-  
 
 ## OBSOLETE ##
 #Generate the file containing queries to test obtaining the distinct 
