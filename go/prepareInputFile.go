@@ -15,7 +15,9 @@ package view_name, view_oid, source_name, source_oid
 convert it to source_oid, source_oid, source_name, view_name
 to allow access using binary search techniques.   This technique
 is based roughly on the bisect file pattern used in my DEM water
-flow array ported from python to go.  */
+flow array ported from python to go.  Some ideas borrowed from
+bibliographic indexing along with rway merge. Seeing if go
+can come close to the native linux sort. */
 
 type SortLine struct {
 	lastString string
