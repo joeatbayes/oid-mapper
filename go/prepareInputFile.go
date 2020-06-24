@@ -1,4 +1,3 @@
-
 package main
  
 import (
@@ -14,7 +13,9 @@ import (
 /* Parse the input file in the form of 
 package view_name, view_oid, source_name, source_oid 
 convert it to source_oid, source_oid, source_name, view_name
-to allow access using binary search techniques */
+to allow access using binary search techniques.   This technique
+is based roughly on the bisect file pattern used in my DEM water
+flow array ported from python to go.  */
 
 type SortLine struct {
 	lastString string
@@ -157,9 +158,32 @@ func mergeFiles(fnameOut string, fnamesIn []string) {
  merge them together opening up to maxConcurrentSeg
  together. */
 func mergFiles(globPatt string,  maxConcurrentSeg int) {
+	// Get a list of files
+	
+	// Find the set of smallest files smaller than maxConcurrentSeg
+	
+	// Merge the files into a larger file 
+	// remove the segment files. 
+	
 }
 
 
+/*  Name the larger file with a new name eg if
+ first segments input are ".seg" then name 
+ the output to ".segp1" in pass 1,  then
+ segp2 in pass 2,  etc.  Keep increasing
+ the segment phase until we end up in a segment
+ with only a single output file which is the
+ one we want to keep file */
+func mergSegFiles(globPatt string, startPhase int, maxConcurrentSeg int) {
+	
+}
+
+
+
+//------------------
+//--- Process Input Files
+//------------------
 func saveBlock(bdesc BlockDesc) {
 	fiName := bdesc.baseFiName + "." + fmt.Sprintf("%05d",bdesc.segCnt) + ".seg"
 	file, err := os.OpenFile(fiName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
