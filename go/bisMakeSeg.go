@@ -8,6 +8,8 @@ import (
 	"strings"
 	"sort"
 	//"strconv"
+	"runtime"
+	"sync"
 )
 
 /* Parse the input file in the form of 
@@ -30,8 +32,8 @@ type BlockDesc struct {
 //--- Process Input Files
 //------------------
 func saveBlock(bdesc BlockDesc) {
-	fiName := bdesc.baseFiName + "." + fmt.Sprintf("%05d",bdesc.segCnt) + ".seg"
-	file, err := os.OpenFile(fiName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	fiName := bdesc.baseFiName + "." + fmt.Sprintf("%05d",bdesc.segCnt) + "-000.seg"
+	file, err := os.OpenFile(fiName, os.O_CREATE|os.O_WRONLY, 0644)
     if err != nil {
 		  log.Fatalf("failed creating file %s: %s", fiName, err)
 	}
@@ -42,9 +44,10 @@ func saveBlock(bdesc BlockDesc) {
 	  _, _ = datawriter.WriteString(bdesc.lines[i] + "\n")
 	}
 	datawriter.Flush()
+	PrintMemUsage()
 }
 
-func procBlock(chanIn chan BlockDesc) {
+func procBlock(chanIn chan BlockDesc, wg *sync.WaitGroup) {
 	for {
 	    bdesc,more := <- chanIn
 		fmt.Println("proc Block rec lines segCnt=", bdesc.segCnt, " numLines=", len(bdesc.lines))
@@ -57,19 +60,40 @@ func procBlock(chanIn chan BlockDesc) {
 			break;
 		}
 	}
+	wg.Done()
 }
 
+func PrintMemUsage() {
+        var m runtime.MemStats
+        runtime.ReadMemStats(&m)
+        // For info on each, see: https://golang.org/pkg/runtime/#MemStats
+        fmt.Printf("Alloc = %v MiB", bToMb(m.Alloc))
+        fmt.Printf("\tTotalAlloc = %v MiB", bToMb(m.TotalAlloc))
+        fmt.Printf("\tSys = %v MiB", bToMb(m.Sys))
+        fmt.Printf("\tNumGC = %v\n", m.NumGC)
+}
 
+func bToMb(b uint64) uint64 {
+    return b / 1024 / 1024
+}
 
 func main() {
-	numThread := 25
-	blocks := make(chan BlockDesc, numThread+1)
+	fractOfCPUUsage := 0.8
+	numThread := int(float64(runtime.NumCPU()) * fractOfCPUUsage)
+	if numThread < 2 { numThread = 2 }
+	fmt.Println("selected max thread=", numThread)
+	maxElePerBlock := 2000000 // 5000000
+	maxBytesPerBlock := 250000000 // 450000000
+	var wg sync.WaitGroup
+	wg.Add(numThread)
+	blocks := make(chan BlockDesc, numThread+5)
 	fmt.Println("os.Args=", os.Args)
-	if len(os.Args) < 2 {
-		fmt.Println("Arg 1 must be input file name")
+	if len(os.Args) < 3 {
+		fmt.Println("Arg 1 must be input file name and arg2 must be output base name")
 		panic("abort")
 	}
 	fInName := os.Args[1]
+	fOutName := os.Args[2]
 	fmt.Println("fiName=", fInName)
 	file, err := os.Open(fInName)
 	if err != nil {
@@ -78,7 +102,7 @@ func main() {
 	
 	// Spawn our worker threads
 	for pcnt:=0; pcnt<numThread; pcnt++ { 
-		go procBlock(blocks);		
+		go procBlock(blocks, &wg);		
 	}
 	
 	// -----
@@ -90,7 +114,7 @@ func main() {
 	scanner.Scan()
 	header :=  scanner.Text()
 	fmt.Println("header=", header)
-	txtlines := make([]string, 2000000)
+	txtlines := make([]string, maxElePerBlock+1)
 	var lflds [4] string
 	rowNdx := 0
 	buffBytes := 0
@@ -112,14 +136,14 @@ func main() {
 			  txtlines[rowNdx] = outStr
 			  rowNdx += 1
 			  buffBytes += len(outStr)
-			  if buffBytes >= 150000000 || rowNdx > 1999999 {
+			  if buffBytes >= maxBytesPerBlock || rowNdx >= maxElePerBlock {
 				  // Flush our full buffer
 				  fmt.Println("Buffer line#", lineCnt)
-				  blocks <- BlockDesc{segCnt, "testseg", txtlines[:rowNdx]}
+				  blocks <- BlockDesc{segCnt, fOutName, txtlines[:rowNdx]}
 				  // make a new buffer to contain the next chunk
 				  // so we can fill it while other threads work
 				  // on sorting
-				  txtlines = make([]string,2000000)
+				  txtlines = make([]string,maxElePerBlock)
 				  rowNdx = 0
 				  buffBytes = 0
 				  segCnt += 1
@@ -131,13 +155,15 @@ func main() {
 	if rowNdx > 0  {
 		blocks <- BlockDesc{segCnt, "testseg", txtlines[:rowNdx]}
 	}
-								  
  
 	file.Close()
 	close(blocks)
-	for _, eachline := range txtlines {
-		fmt.Println(eachline)
-	}
+	fmt.Println("Waiting for threads to finish")
+	wg.Wait()
+	
+	//for _, eachline := range txtlines {
+	//	fmt.Println(eachline)
+	//}
 	
 }
  
