@@ -19,23 +19,28 @@ import (
  Some ideas borrowed from bibliographic indexing along with rway merge. 
  Seeing if go can come close to the native linux sort. 
  
- TODO:  Reduce the number of sorts to reduce total time and drive
-   the hard disks at closer to capacity.  In early tests the 
-   drive capacity is closer to 450MiB/s and we are at best driving
-   about 90MiB/s with with the last pass at 27MiB/s. 
-   Read a block of lines from each file
-   sort all the blocks together.   Only when processing a block with a 
-   string greater than the last string read from a given file do we need
-   to readd and sort again. With random distribution ad data between files 
-   this should allow us to process nearly the entire block without the 
-   next sort. It could require scanning the entire file list to find the
-   next violator but we could do this with a single sort and just remember
-   the lowest string from any of the files since we know it will be the 
-   first to be violated.  When we violate the rule of processing a string
-   that is greater than the smallest next string from any file we need to 
-   read another block from that file and resort.     It should dramatically
-   reduce our sorts which should allow us to drive the drives at closer
-   to their IO capacity.
+ Adapted from Nieve approach to read larger bulks of data and reduce 
+ total run time by reducing sorts. 
+ 
+ Reduce the number of sorts to reduce total time and drive
+ the hard disks at closer to capacity.  In early tests the 
+ drive capacity is closer to 450MiB/s and we are at best driving
+ about 90MiB/s with with the last pass at 27MiB/s. 
+ Read a block of lines from each file
+ sort all the blocks together.   Only when processing a block with a 
+ string greater than the last string read from a given file do we need
+ to readd and sort again. With random distribution ad data between files 
+ this should allow us to process nearly the entire block without the 
+ next sort. It could require scanning the entire file list to find the
+ next violator but we could do this with a single sort and just remember
+ the lowest string from any of the files since we know it will be the 
+ first to be violated.  When we violate the rule of processing a string
+ that is greater than the smallest next string from any file we need to 
+ read another block from that file and resort.     It should dramatically
+ reduce our sorts which should allow us to drive the drives at closer
+ to their IO capacity.   Always read the next block for lowest file
+ in a separate thread and pre-sort it before merging into the complete set.
+ 
 */
 
 type SortLine struct {

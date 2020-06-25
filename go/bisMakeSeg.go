@@ -82,8 +82,8 @@ func main() {
 	numThread := int(float64(runtime.NumCPU()) * fractOfCPUUsage)
 	if numThread < 2 { numThread = 2 }
 	fmt.Println("selected max thread=", numThread)
-	maxElePerBlock := 2000000 // 5000000
-	maxBytesPerBlock := 250000000 // 450000000
+	maxElePerBlock := 4000000 // 5000000
+	maxBytesPerBlock := 450000000 // 450000000
 	var wg sync.WaitGroup
 	wg.Add(numThread)
 	blocks := make(chan BlockDesc, numThread+5)
