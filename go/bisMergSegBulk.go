@@ -110,6 +110,33 @@ func (sel *SortLine) readNext() string {
 }
 
 
+func (sel *SortLine) readNextChunck(maxBytes int) *[]string {
+	tout := make([]string,0)
+	bytesRead := 0
+	if sel.eof == true {
+			sel.lastString = "~~"
+			fmt.Println("L57 EOF", " name=", sel.fp.Name())
+	} else {
+		for bytesRead < maxBytes && sel.eof == false {
+			sel.readCnt += 1
+			more := sel.scanner.Scan()
+			line := sel.scanner.Text()
+			bytesRead += len(line)
+			tout = append(tout, line)
+			if more  {
+				sel.lastString = line
+			} else  {
+				sel.eof = true
+				sel.lastString = "~~"
+			} 
+			//fmt.Println("L63: name=", sel.fp.Name(), " sel.lastString=", sel.lastString)
+		}
+	}
+	return &tout
+}
+
+
+
 func (sln SortLines) dumpAll() { 
 	for ndx:=0; ndx < len(sln); ndx ++ {
 		sel := sln[ndx]
@@ -280,7 +307,7 @@ func mergFilesList(flist []string, baseName string, segLev int, suff string,  ma
 			fmt.Println("L255: Too many files open so wait MaxOpenFiles=", MaxOpenFiles, " openFileCnt=", openFileCnt)
 			time.Sleep(time.Second)
 		}
-		fmt.Println("L262: OK to process MaxOpenFiles=", MaxOpenFiles, " openFileCnt=", openFileCnt, 
+		fmt.Println("L262: OK to process MaxOpenFiles=", MaxOpenFiles, " openFileCnt=", openFileCnt)
 		countLock.Lock()
 			openFileCnt += len(fnames)
 			mergeThreadsActive += 1

@@ -175,5 +175,15 @@ time.create_db.*.txt
 time.load_db.*.txt
 logfile*
 t.sort
+*.seg
+*.pseg
+bisMakeSeg
+bisMergeSeg
+data/index*
+t.t*
+.swp
+exPrintMemoryConfig
+
+
 
 

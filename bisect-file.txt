@@ -1,6 +1,3 @@
-# Increase size of tmp you will need at least twice
-# the size of the largest file to be sorted
- sudo mount -o remount,size=500G /tmp/
 
 # Clean up old sort files left over when
 # sort has aborted
@@ -10,13 +7,106 @@
 # twice the size of the largest file being sorted
 df -h /tmp
 
+export GOMAXPROCS=8
+  # This was on a system with 4 physical cores and 8 CPU hyperthread cores.
+  # Use this to allow GO to use more cores or restrict how much total CPU
+  # The GO program is allowed to consume. Since a lot of 
+  # our threads are blocked by file IO we can get better utilization
+  # by over subscribing the CPU.
+
 Basic Linux Sort on 89GB input file with 1.043B record sorted with  
   # http://www.theunixschool.com/2012/08/linux-sort-command-examples.html
-  time sort data/stage/generated_oids.340m.map.txt > t.sort 
-  3m31 sec.
-  Sort on child oid, par oid, child tbl, par table 
-  time sort -t"," -k4,4 -k2,2 -k3,3 -k1,1  data/stage/generated_oids.340m.map.txt > t.sort 
-  1.m37.73 sec.
-  It occupies 100% of CPU on all cores while running. So would need to run as nice.
+  time sort -T tmp -S2G --parallel=5 -o t.sort data/stage/generated_oids.340m.map.txt 
+  #  -T tmp - tells the system to use a locl directory tmp to store tmp files
+  #	         this is needed because otherwise tmp will be /tmp which is not
+  #			 large enough to accomodate very large sort keys.  Since /tmp
+  #			 is quite often a ram disk we can nto easily increase space.
+  #    -S2G -  Uses 2 Gigabytes for main buffer.  This can help prevent
+  #	        sort from using so much memory it decreases performance for
+  #			the system as a whole.
+  #	--parallel=5 - allows upto 5 parrallel tasks doing sub-sort activities
+  #	        if not specified it can use up all cores in the system 
+  #			degrading overall performance.
+  #	-o name - Tells sort to write the file to the named file.
+  #
+  # It occupies 100% of CPU on all cores while running. So would need to run as nice.
+  # if also supporting higher priority tasks like serving up the search API 
   
-time sort -S2G --parallel=5 -o t.sort data/stage/generated_oids.340m.map.txt 
+  *5L - 52m30.56s Load average 1.83.  Averages 150MiB/s with short bursts to 1000Mibs
+  
+        
+
+  # Same thing but removing the limits on memory and parallel 
+  # and moving tmp to the nvme drive
+  mkdir $HOME/tmp
+  time sort -T $HOME/tmp -o t.sort data/stage/generated_oids.340m.map.txt 
+  
+    *5L -39m18.2s load average 3.94 with all cores showing near 100%. Memory usage
+         by sort jumped to 30.8G.
+    
+
+  
+  # Sort on child oid, par oid, child tbl, par table 
+  time sort -T $HOME/tmp -S3G --parallel=6 -t"," -k4,4 -k2,2 -k3,3 -k1,1 -o t.sort data/stage/generated_oids.340m.map.txt 
+  1.m37.73 sec.
+
+go run bisMakeSeg.go ../data/stage/generated_oids.10m.map.txt  ../data/index/10m
+time ./bisMakeSeg ../data/stage/generated_oids.340m.map.txt ../data/index/340m
+
+go build  bisMakeSeg.go
+  # When read with single large file has one core at 74% 
+  # readming an average of 594Mib per second. A 89GB file
+  #  2m45.9s to read the input file including split line 
+  #     and reforming string.
+  #  5m39s Add group in RAM into 50K chunk then dispose
+  #     of the chunk when full. 
+  #     chunks.
+  # 11m44s - Add Sorting the chunks prior to disposing.
+  #  6m19s - Convert sorting to go routines to allow multi-threaded
+  #  8m42s - Add writing sorted files with larger buffer 
+  #  Hyper threading turned off
+  #  9m43s - when running with 100% threads.
+  #  9m56s - when running with 350% threads.
+  #  9m28s - when running 80% threads
+  #  9m6s  - when file buffer sizes reduced.
+  #  22m23.3s - When running 70% threads
+  # Same as last but with Hyper threading turned on
+  #  8m33s same as last but with hyper threading turned on
+  #  7m12s Change target drive from SSD to NVME so read from
+           SSD and write to NVME.
+  
+time ./bisMergeSeg ../data/index/340m. ../data/index/340merged
+time ./bisMergeSeg ../data/index/340m. ../data/index/340merged > t.t^C
+
+shell for whole job
+split portion
+real	8m53.524s
+user	30m11.115s
+sys	1m21.711s
+
+merge phase 1
+real	25m4.262s
+user	120m3.742s
+sys	65m22.943s
+
+total job
+real	33m57.790s
+user	150m14.858s
+sys	66m44.655s
+
+
+
+
+# Utility to parse and sort segments in python to compare single threaded
+# python performance to single and mutli-threaded GO performance.  
+time python make_sort_seg.py  data/stage/generated_oids.340m.map.txt srtout
+  *5L - 31m28s - roughly 4 times slower than same in GO but
+        consumed a lot less total CPU around 72% of 1 core where
+        go consumed closer to 4 full cores. 
+
+time ./bisMergeSeg ../data/index/340m. ../data/index/340merged > t.t
+
+real	71m22.375s
+user	85m57.850s
+sys	99m58.833s
+

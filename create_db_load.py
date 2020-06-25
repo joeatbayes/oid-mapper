@@ -3,7 +3,8 @@ file to load that data into SQL. """
 import sys
 import os
 
-MaxBufLen = 50000
+MaxBufLen = 15000000
+MaxBufBytes = 1000000000
 
 def quote(str):
     return "\'" + str + "\'"
@@ -16,7 +17,6 @@ def processFile(fname, fout):
    fin = open(fname)
    hdr = fin.readline()
    buf = []
-   insStr = "INSERT INTO omap(chiloid, chiltbl, paroid, partbl) VALUES"
    while True:
      dline = fin.readline().strip()
      # Flush if EOF or too many items
@@ -36,7 +36,7 @@ def processFile(fname, fout):
        paroid = flds[1]
        chiltbl = flds[2]
        chiloid = flds[3]
-       buf.append( "(" + quote(chiloid) + "," + quote(chiltbl) + "," + quote(paroid) + "," + quote(partbl) + ")")
+       buf.append( chiloid + "," + paroid + "," + chiltbl + "," + partbl )
                     
      else: 
          break

@@ -8,6 +8,29 @@ Create a script that provides a base name of input that runs all phases with the
 
 Create a queue based file diretory where we read files in time sequence of when created. create new SQL statements and then records the last name of file processed.  Organize this as one directory per day so we do not accumulate more files than healthy in single directory.  Records last file   
 
+Update bisect file to scan the file seeking the longest key that provides a
+useful amount of data.  Use that prefix and store in a file so we remove
+the key prefix and only store the amount of data that is unique.  When reading
+we should be able to re-constitue the original string by combining them
+this should reduce bytes read from disk by removing the redundant prefixes
+the scaanner can simply scan in order keeping a count of bytes for each character
+combinatation edge-gram and choose the prefix by the first one that exceeds 
+the target data size eg:  1000 bytes.  Eg: for the string  Lansing we would have a counter  L - 50,000,  LA - 25000,  LAN - 15,000,  LANS - 14,000,  LANSI - 10000,
+LANSIN - 8000,   LANSING - 6000.  Then when we revied a new string such as 
+"lansfred"  We know that is diverged at the LANSI versus LANSF so we look first at
+LANSING - to see if it is greater than threashold,  Then look at LANSIN to see if it is over working backwards  If one of them is great then we keep what ever data was loaded at that prefix and generate a new file for that prefix.   If they are all to small then
+the counter LANS is still valid and keeps growing with the new string we repeat the 
+process whenever the strings change upto the limit of the keys characters to 
+consider.  Our goal is to take the longest prefix possible while still meeting the
+the size goals so we do not proliferate too many files.  This should give us 
+maximum natural compression on disk while minimizing disk read.  To query we 
+will have to figure out which prefixes match what was generated and then use
+the standard bisect file inside of them.  I can use a binar search of a prefixes
+file to locate the longest matching substring to determine which sub file the 
+content will be in. 
+
+
+
 ############
 ## Under Consideration:
 ############
