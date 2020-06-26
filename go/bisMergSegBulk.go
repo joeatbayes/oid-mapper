@@ -258,7 +258,7 @@ func mergeFiles(fnameOut string, fnamesIn []string) {
 			// then should allow a second thread to be loading 
 			// and presorting the next segment. 
 			var lines []string
-			if len(buff) < 100000 {
+			if len(buff) < 200000 {
 				// TODO: Find a way to allow other threads 
 				//  to read the input files, combine them 
 				//  and pre-sort them so we have them in 
