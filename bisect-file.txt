@@ -76,7 +76,10 @@ go build  bisMakeSeg.go
            SSD and write to NVME.
   
 time ./bisMergeSeg ../data/index/340m. ../data/index/340merged
-time ./bisMergeSeg ../data/index/340m. ../data/index/340merged > t.t^C
+time ./bisMergeSeg ../data/index/340m. ../data/index/340merged > t.t
+
+time ./bisMergSegBulk ../data/index/340m. ../data/index/340merged > t.t
+
 
 shell for whole job
 split portion

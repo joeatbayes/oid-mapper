@@ -183,6 +183,7 @@ data/index*
 t.t*
 .swp
 exPrintMemoryConfig
+bisMergSegBulk
 
 
 
