@@ -44,16 +44,26 @@ import (
 */
 
 type SortLine struct {
-	lastString string
+	text string
 	fp *os.File 
 	scanner *bufio.Scanner
 	eof bool
 	readCnt int
 }
 
-type SortLines []*SortLine
+type SortLines struct {
+	lines []*SortLine
+	maxBytesPerRead int
+}
+
+
 const MaxOpenFiles = 300
 var MaxMergeThreadsActive = 18
+var GMaxBytesPerRead = 32000   // Warning smallest total buffer size will be 
+                               // number of active threads * this number
+                               // In some instances we will have to read
+                               // forward in the files so buffer could grow
+                               // beyond this minimum. 
 
 var procSortLinesWG sync.WaitGroup
 var openFileCnt = 0
@@ -70,8 +80,9 @@ func fileExists(name string) (bool) {
 // open all the files names encapsulate them
 // in a sort spec and return a slice with all 
 // the specs.
-func makeSortLines(fnamesIn []string) SortLines {
+func makeSortLines(fnamesIn []string) *SortLines {
 	specs := make([]*SortLine, 0)
+	sln := SortLines {specs, GMaxBytesPerRead}
 	for ndx:=0; ndx < len(fnamesIn); ndx++ {
 		fiName := fnamesIn[ndx]
 		//fmt.Println("L37: makeSortLines fiName=", fiName)
@@ -84,90 +95,94 @@ func makeSortLines(fnamesIn []string) SortLines {
 			specs = append(specs, aspec);
 		}
 	}
-	return specs
+	sln.lines = specs
+	return &sln
 }
 
-func (sl SortLines)sortSortLines() {
-	if len(sl) > 1 {
-		sort.Slice(sl, func(i, j int) bool { return sl[i].lastString < sl[j].lastString })
+func (sl *SortLines) sortSortLines() {
+	lines := sl.lines
+	if len(lines) > 1 {
+		sort.Slice(lines, func(i, j int) bool { return lines[i].text < lines[j].text })
 	}
 }
 
-func (sel *SortLine) readNext() string {
-	if sel.eof == true {
-		sel.lastString = "~~"
-		fmt.Println("L57 EOF", " name=", sel.fp.Name())
-	} else {
-		sel.readCnt += 1
-		more := sel.scanner.Scan()
-		if more == false {
-			sel.eof = true
-		} 
-		sel.lastString = sel.scanner.Text()
-		//fmt.Println("L63: name=", sel.fp.Name(), " sel.lastString=", sel.lastString)
-	}
-	return sel.lastString
-}
-
-
-func (sel *SortLine) readNextChunck(maxBytes int) *[]string {
-	tout := make([]string,0)
+func (sel *SortLine) readNextChunck(maxBytes int) []string {
+	tout := make([]string,0,500)
 	bytesRead := 0
+	line := "~~"
 	if sel.eof == true {
-			sel.lastString = "~~"
+			sel.text = "~~"
 			fmt.Println("L57 EOF", " name=", sel.fp.Name())
 	} else {
-		for bytesRead < maxBytes && sel.eof == false {
+		for bytesRead < maxBytes  {
 			sel.readCnt += 1
 			more := sel.scanner.Scan()
-			line := sel.scanner.Text()
+			line = sel.scanner.Text()
 			bytesRead += len(line)
 			tout = append(tout, line)
-			if more  {
-				sel.lastString = line
-			} else  {
+			if more == false {
 				sel.eof = true
-				sel.lastString = "~~"
+				break
 			} 
-			//fmt.Println("L63: name=", sel.fp.Name(), " sel.lastString=", sel.lastString)
+			//fmt.Println("L63: name=", sel.fp.Name(), " sel.text=", sel.text)
 		}
+		sel.text = line
 	}
-	return &tout
+	return tout
 }
 
-
-
-func (sln SortLines) dumpAll() { 
-	for ndx:=0; ndx < len(sln); ndx ++ {
-		sel := sln[ndx]
-		fmt.Println("L74 dumpAll: ndx=", ndx,  " cnt=", sel.readCnt, " fi=", sel.fp.Name(), " eof=", sel.eof, " txt=", sel.lastString)
+func (sln *SortLines) dumpAll() { 
+	for ndx:=0; ndx < len(sln.lines); ndx ++ {
+		sel := sln.lines[ndx]
+		fmt.Println("L74 dumpAll: ndx=", ndx,  " cnt=", sel.readCnt, " fi=", sel.fp.Name(), " eof=", sel.eof, " txt=", sel.text)
 	}
 }
 
-/* Read the next line for all files in the sort line spec */
-func (sln SortLines) readNextAll() SortLines {
-	for ndx:=0; ndx < len(sln); ndx ++ {
-		sel := sln[ndx];
-		sel.readNext();
-	}
-	//fmt.Println("L85:End readNextAll DUMP")
-	//sln.dumpAll()
-	sln.sortSortLines();
-	//  Handle special case of some files
-	//  hitting EOF and needing to be removed
-	//  from the set.
-	for len(sln) > 0 {
-		lastndx := len(sln) -1
-		if sln[lastndx].lastString == "~~" {
-			sln[lastndx].fp.Close()
-			sln = sln[ : lastndx] // pop last element
-		} else {
-			break;
+/* Return the SortLine with the lowest last read 
+  line of text by sort order. If no sort line has
+  sort order less than "~~" then will return the 
+  the first sort line even if it is eof.  This can
+  be used as indication the process is complete */
+func (sln *SortLines) findLowest() (*SortLine, *SortLine, bool) {
+	slines := sln.lines
+	lowest := slines[0]
+	highest:= slines[0]
+	allEOF := true
+	for ndx:=0; ndx < len(slines); ndx ++ {
+		sel := slines[ndx];
+		if sel.eof == false {
+			allEOF = false
+			if sel.text < lowest.text {
+				lowest = sel
+			}
+			if sel.text > highest.text {
+				highest = sel
+			}
 		}
 	}
-	//fmt.Println("L100:End readNextAll DUMP")
-	//sln.dumpAll()
-	return sln
+	return lowest, highest, allEOF
+}
+
+/* Read the next chunk of lines from all files
+  and adds then to the sln buffer.  Also sets 
+  the the sln.lowest based on the last line read
+  from all files that has the lowest sort order */
+func (sln *SortLines) readNextAll() []string {
+	slines := sln.lines
+	buf := make([]string,0,5000)
+	//fmt.Println("L172 len(slines)=", len(slines), " slines=", slines)
+	for ndx :=0; ndx < len(slines); ndx ++ {
+		sel := slines[ndx];
+		//fmt.Println("L174: sel=", sel)
+		if sel.eof == false {
+			lines := sel.readNextChunck(sln.maxBytesPerRead);
+			//fmt.Println("L177: lastText = ", sel.text,  " numLines=", len(lines))
+			buf = append(buf, lines...)
+		}
+	}
+	// Don't sort here because we will need to sort
+	// the read back into the larger buffer anyway
+	return buf
 }
 
 /* Read strings from a set of files concurrently open
@@ -183,82 +198,90 @@ much possibly in the worst case of num of lines in every file
 is faster than read-readng files more times to allow simple
 two line compare. */
 func mergeFiles(fnameOut string, fnamesIn []string) {
-	// TODO: Handle special case with only 1 input file
 	sln := makeSortLines(fnamesIn);
-	sln = sln.readNextAll()
-	sln.sortSortLines()
-	selected := sln[0]
-	next := selected
-	if len(fnamesIn) > 1 {
-	  next = sln[1]
+	fmt.Println("L204: fnameOut=", fnameOut, " fnamesIn=", fnamesIn);
+	buff := sln.readNextAll() // preload buffer 
+	if len(buff) > 0 {
+	   sort.Strings(buff)
+	} else {
+		fmt.Println("L185: ReadNextAll: no lines available")
 	}
+	lowest, _, allEOF := sln.findLowest()
+	lowestStr := lowest.text
+	
+	//fmt.Println("L206: after readNextAll sln=", sln)
 	lastWrite := ""
 	lineCnt := 0
-	sinceStatCnt := 0
-	
-	fout, foerr := os.OpenFile(fnameOut, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	fout, foerr := os.OpenFile(fnameOut, os.O_CREATE|os.O_WRONLY, 0644)
 	if foerr != nil {
 			log.Fatalf("failed creating file %s: %s", fnameOut, foerr)
 	}
 	datawriter := bufio.NewWriter(fout)
 	defer fout.Close()
-	for {
+	rowNdx := 0
+	sinceLastRead := 0
+	for rowNdx = 0; rowNdx < len(buff); rowNdx++ {
+		sinceLastRead += 1
 		lineCnt += 1
-		sinceStatCnt += 1
-
-		if len(sln) == 0 {
-			// all files have been removed from consideration
-			break
-		}
-		
-		if (len(sln) == 1) {
-			// Handle Special case of only 1 input file remaining
-			for  selected.lastString != "~~" {
-				fout.WriteString(selected.lastString)
+		lstr := buff[rowNdx]
+		if lstr <= lowestStr || allEOF == true{
+			if lstr != lastWrite {
+				fout.WriteString(lstr)
 				fout.WriteString("\n")
-				lastWrite = selected.lastString
-				selected.readNext()
+				lastWrite = lstr
 			}
-			break;
-		}
-		
-		//sln.dumpAll() 
-		if selected.lastString > next.lastString {
-			sln.sortSortLines()
-			selected = sln[0]
-			next = sln[1]
-		}
-		//if sinceStatCnt > 5000000 {
-		//	sinceStatCnt = 0
-		//	fmt.Println("L164: statCnt lineCnt=", lineCnt, "sel=", selected.lastString, " next=", next.lastString)
-		//}
-		if lastWrite != selected.lastString {
-			// handle special case of duplicate line that should be filtered out.
-			fout.WriteString(selected.lastString)
-			fout.WriteString("\n")
-			lastWrite = selected.lastString
-		}
-		// Read the next line from the file we read the last one 
-		// from. 
-		selected.readNext()
-		if (selected.lastString == "~~") {
-			// Last string from our selected file indicates
-			// EOF so we remove it from the list of files
-			// to consider. 
-			selected.fp.Close()
-			if len(sln) < 1 {
-				break
-			}
-			sln = sln[1:]
-			sln.sortSortLines()
-			selected = sln[0]
-			if len(sln) < 2 {
-				next = nil
+		} else {
+			//fmt.Println("L229: ReadNext rowNdx=", rowNdx, " bufLen=", len(buff), " sinceLastRead=", sinceLastRead, " lstr=", lstr[:12], " lowestStr=", lowestStr[:12])
+			// The line we are reading is greater than 
+			// the lowest sort order of the last lines 
+			// read from files so we need to read another
+			// chunk from that file.
+			buff = buff[rowNdx:] // truncate the buffer to remove strings already written
+			rowNdx = 0 // reset counter to accomodate truncated buffer
+			
+			// NOTE:  Would it be faster to load each segment
+			//  since we know they are in order we should be able 
+			//  to process from 1 buffer until we know there is 
+			//  a buffer that has a higher value then transition
+			//  up it. We would have to traverse the buffers to 
+			//  find the one that has the lowest order string 
+			//  capable that fits but if we have a number of strings
+			//  smaller than the next buffer we could avoid the 
+			//  scan.  Problem is that we would need to scan numFileSeg
+			//  for the recovery but that may be cheaper than attempting
+			//  to sort a much larger list of records loaded with this 
+			//  approach we could use background threads to read and load
+			//  next segments for each file buffer. 
+			//  
+			// TODO: PUSH READ ALL NEXT OUT TO SEPARATE THREAD AS LONG
+			// as length of buffer loaded is less than a MaxBufLen
+			// then should allow a second thread to be loading 
+			// and presorting the next segment. 
+			var lines []string
+			if len(buff) < 100000 {
+				// TODO: Find a way to allow other threads 
+				//  to read the input files, combine them 
+				//  and pre-sort them so we have them in 
+				//  easy to consume fashion when we need
+				//  the next one. Could keep and array
+				//  of several pre-loaded so we can just
+				//  pop it off the stack when we want the next one. 
+				 
+				// If buffer is less than a configurable threashold
+				// then allow readNextAll so we can sort a larger chunk once.
+				lines = sln.readNextAll()
 			} else {
-			  next = sln[1]
+				lines = lowest.readNextChunck(sln.maxBytesPerRead);
 			}
+			lowest, _, allEOF = sln.findLowest()
+			if len(lines) > 0 {
+					buff = append(buff, lines...)
+					sort.Strings(buff)
+			} 
+			lowestStr = lowest.text
+			sinceLastRead = 0
 		}
-	}
+	} // for
 	// TODO:remove the segment files. 
 	datawriter.Flush()
 	countLock.Lock()
@@ -337,7 +360,7 @@ func mergFilesList(flist []string, baseName string, segLev int, suff string,  ma
 
 
 func main() {
-	maxConcurrentSegPerThread := 25
+	maxConcurrentSegPerThread := 400
 	concurrentSegPerThread := maxConcurrentSegPerThread
 	portCoreToUse := 1.3
 	numCore := int(float64(runtime.NumCPU()) * portCoreToUse)
