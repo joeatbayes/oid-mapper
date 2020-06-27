@@ -12,7 +12,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"sync"
-	//"time"
+	"time"
 )
 
 /* Merge pre-sorted input files into a sorted output file.   This technique is based roughly
@@ -37,18 +37,18 @@ type SortLines struct {
 	startFiSet []string // list of files to work on.
 	fiCtr      int      // used to generate new file names
 	baseName   string
+	wrkBaseName string
 	suff       string
 	workList   chan mergeSpec
 	fiList     chan string
 	wgDone     sync.WaitGroup
+	wgWorkerReq sync.WaitGroup
 	pendCnt    int // count of files known to need work
 	countLock  sync.Mutex
 	maxThread  int
 }
 
-const MaxOpenFiles = 300
-
-var MaxMergeThreadsActive = 50
+const MaxOpenFiles = 400
 
 func fileExists(name string) bool {
 	_, err := os.Stat(name)
@@ -62,7 +62,24 @@ func (sln *SortLines) nextFiName() string {
 	sln.countLock.Lock()
 	sln.fiCtr += 1
 	sln.countLock.Unlock()
-	return sln.baseName + "-" + fmt.Sprintf("s-%03d", sln.fiCtr) + "." + sln.suff
+	return sln.wrkBaseName + "-" + fmt.Sprintf(".merge.s-%03d", sln.fiCtr) + sln.suff
+}
+
+/* Remove source file if it matches the defined file suffix
+  returns true if the file was removed otherwise returns 
+  false */
+func (sln *SortLines) removeTempFile(fiPath string) bool{
+	ext := filepath.Ext(fiPath)
+	if ext == sln.suff {
+		err := os.Remove(fiPath)
+		if err != nil {
+			fmt.Println("L76: Err Removing file: ", fiPath, " err=", err)
+			return false
+		}
+		return true
+	} else {
+		return false
+	}
 }
 
 /* Read strings from a set of files concurrently open
@@ -75,26 +92,24 @@ func (sln *SortLines) mergeFiles(fname1 string, fname2 string, fnameOut string) 
 
 	fiPtr1, err1 := os.Open(fname1)
 	if err1 != nil {
-		log.Fatalf("failed opening file %s: %s", fname1, err1)
+		log.Fatalf("L78: failed opening file %s: %s", fname1, err1)
 	}
 
 	fiPtr2, err2 := os.Open(fname2)
 	if err2 != nil {
-		log.Fatalf("failed opening file %s: %s", fname2, err2)
+		log.Fatalf("L83: failed opening file %s: %s", fname2, err2)
 	}
 
 	scan1 := bufio.NewScanner(fiPtr1)
-	scan2 := bufio.NewScanner(fiPtr1)
+	scan2 := bufio.NewScanner(fiPtr2)
 	more1 := scan1.Scan()
 	more2 := scan2.Scan()
 	text1 := scan1.Text()
 	text2 := scan2.Text()
-	defer fiPtr1.Close()
-	defer fiPtr2.Close()
 	lastWrite := ""
 	fout, foerr := os.OpenFile(fnameOut, os.O_CREATE|os.O_WRONLY, 0644)
 	if foerr != nil {
-		log.Fatalf("failed creating file %s: %s", fnameOut, foerr)
+		log.Fatalf("L97: failed creating file %s: %s", fnameOut, foerr)
 	}
 	datawriter := bufio.NewWriter(fout)
 	defer fout.Close()
@@ -155,14 +170,19 @@ func (sln *SortLines) mergeFiles(fname1 string, fname2 string, fnameOut string) 
 	}
 
 	// TODO:remove the input files files.
-
+	fiPtr1.Close()
+	fiPtr2.Close()
+	sln.removeTempFile(fname1)
+	sln.removeTempFile(fname2)
 	datawriter.Flush()
 	sln.countLock.Lock()
 	sln.pendCnt -= 2 // Finish 2 files
 	sln.countLock.Unlock()
 	sln.fiList <- fnameOut
+	fmt.Println("L160: finished pendCnt=", sln.pendCnt," fiListLen=", len(sln.fiList), " wrkListLen=", len(sln.workList),"fname1=", fname1, " fname2=", fname2, " fnameout=", fnameOut)
 	sln.wgDone.Done() // fin1 done
 	sln.wgDone.Done() // fin2 done
+	sln.wgWorkerReq.Done()
 }
 
 // My worker thread loops looking for work
@@ -170,6 +190,8 @@ func (sln *SortLines) mergeFiles(fname1 string, fname2 string, fnameOut string) 
 func (sln *SortLines) fpWorkThread() {
 	for {
 		mreq, more := <-sln.workList // dequeue
+		sln.wgWorkerReq.Add(1)
+		fmt.Println("L174: Worker pendCnt=", sln.pendCnt, " mreq=", mreq, " more=", more)
 		sln.mergeFiles(mreq.fin1, mreq.fin2, mreq.fout)
 		if more == false {
 			break
@@ -188,15 +210,18 @@ func (sln *SortLines) mergFilesList() []string {
 	fmt.Println("L160 sln=", sln)
 	filesWritten := make([]string, 0)
 	batchCnt := 0
-
+	fmt.Println("L196 launch Threads maxThread=", sln.maxThread)
 	// Spawn our worker threads passing in SLN so they can
 	// read the work items queue.
 	for threadCnt := 0; threadCnt <= sln.maxThread; threadCnt++ {
 		go sln.fpWorkThread()
+		fmt.Println("Lauched Thread # ", threadCnt)
 	}
 
 	// Now Load the Queue with items to work on.
+	waitCnt := 0
 	for sln.pendCnt > 1 {
+		fmt.Println("L205: pendCnt=", sln.pendCnt, " lenWorkList=", len(sln.workList), " lenFiList=", len(sln.fiList))
 		// This is a little complex so some explanation is in order
 		// We start with pendCnt equal to number of input items in
 		// the list.  Whenever we merge 2 we output 1 which may need
@@ -204,6 +229,15 @@ func (sln *SortLines) mergFilesList() []string {
 		// of 1.  When we work down to having only 1 item in the queue
 		// then we know that everything has been merged as far as possible.
 		// so we can exit.
+		if len(sln.fiList) <= 1 {
+			// May be waiting for an existing merge to be completed
+			// so a file could still show up to be merged.  
+			waitCnt++
+			fmt.Println("L215: waiting waitCnt=", waitCnt,  " pendCnt=", sln.pendCnt, " lenWrkList=", len(sln.workList))
+			time.Sleep(time.Second)
+			continue;
+		}
+		waitCnt = 0
 		f1Name, _ := <-sln.fiList // dequeue
 		if f1Name == "" {
 			break
@@ -216,7 +250,7 @@ func (sln *SortLines) mergFilesList() []string {
 		batchCnt++
 		foutCnt++
 		foutName := sln.nextFiName()
-		fmt.Println("L173: MergeSet=", sln.startFiSet, " foutName=", foutName)
+		fmt.Println("L173: pendCnt=", sln.pendCnt, " f1Name=", f1Name, " f2Name=", f2Name, " foutName=", foutName)
 		filesWritten = append(filesWritten, foutName)
 		sln.countLock.Lock()
 		// adusting counters that will be modified by
@@ -231,43 +265,46 @@ func (sln *SortLines) mergFilesList() []string {
 		// other threads finish.
 		workReq := mergeSpec{fin1: f1Name, fin2: f2Name, fout: foutName}
 		sln.workList <- workReq // enqueu
-
+		fmt.Println("L239: enQueue pendCnt=", sln.pendCnt, " lenFiList=", len(sln.fiList), " lenWorkList=", len(sln.workList), " workReq=", workReq)
 	} // main merge loop
+	
 	sln.wgDone.Done() // for the last file that does not need to be processed.
-	fmt.Println("L284 Waiting for Merge to finish")
+	fmt.Println("L284 pendCnt=", sln.pendCnt, " Waiting for Merge to finish", " lenFiList=", len(sln.fiList), " lenWorkList=", len(sln.workList))
 	// TODO: Add files written to the finish list as soon as the merge
 	//  above finishes so we can start on next merge as soon as we have
 	//  processor resources available.``
-	sln.wgDone.Wait()
-	fmt.Println("L294: All worker Threads are finished =", filesWritten)
 	close(sln.workList) // tell our worker threads they can close
 	close(sln.fiList)
+	sln.wgDone.Wait()
+	sln.wgWorkerReq.Wait()
+	fmt.Println("L294: All worker Threads are finished =", filesWritten)
 	return filesWritten
 }
 
 func main() {
-	portCoreToUse := 10.0
-	numCore := int(float64(runtime.NumCPU()) * portCoreToUse)
-	if numCore < 2 {
-		numCore = 2
-	}
-	MaxMergeThreadsActive = numCore + 1 // reset starting default for current machine config
+	portCoreToUse := 1.0
+	MaxMergeThreadsActive := int(float64(runtime.NumCPU()) * portCoreToUse)  // reset starting default for current machine config
 	// May need to reduce maxThreads to avoid
 	// exceeding machine ulimits for files open
 	maxThreadFileHand := MaxOpenFiles / 3
 	if MaxMergeThreadsActive > maxThreadFileHand {
 		MaxMergeThreadsActive = maxThreadFileHand
 	}
+	if MaxMergeThreadsActive < 1 {
+		MaxMergeThreadsActive = 1
+	}
+	fmt.Println("toSysCore=", runtime.NumCPU(), " portCoreToUse=", portCoreToUse, " MaxMergeThreadsActive=", MaxMergeThreadsActive)
 
 	suffix := "seg"
 	fmt.Println("os.Args=", os.Args)
-	if len(os.Args) < 3 {
-		fmt.Println("Arg 1 must be input file name and arg2 must be output base name")
+	if len(os.Args) < 4 {
+		fmt.Println("Arg 1 input base name, arg2 = work Base Name for Temp files, arg3= output base name")
 		panic("abort")
 	}
 
 	baseName := os.Args[1]
-	fOutName := os.Args[2]
+	wrkBaseName := os.Args[2]
+	fOutName := os.Args[3]
 	fmt.Println("baseName=", baseName)
 
 	if fileExists(fOutName) {
@@ -290,10 +327,11 @@ func main() {
 		startFiSet: fileList,
 		fiCtr:      0,
 		baseName:   baseName,
-		suff:       "srt",
+		wrkBaseName: wrkBaseName,
+		suff:       ".srt",
 		workList:   make(chan mergeSpec, 2000),
 		fiList:     make(chan string, 2000),
-		maxThread:  maxThreadFileHand}
+		maxThread:  MaxMergeThreadsActive}
 	// Add the files to work to a channel
 	for ndx := 0; ndx < len(fileList); ndx++ {
 		sln.fiList <- fileList[ndx] // enqueue
