@@ -48,10 +48,13 @@ package main
 	rwmanystr - 3m40s source on sata ssd, write to nvme 
 	   445MiB/s with drops lower.   Consuming 119% of 1 core
 	   
-	rwmanysort -  - source on sata ssd, write to nvme
+	rwmanysort -  - source on sata ssd, write to same 
 	   claims to be writing about 600MiB/s but fluctuating
 	   a lot. CPU utilization is averagng about 82%
+	   uses string maniuplation took 33m2s
 	   
+	rwmanysortbyte - 
+	rwmanysortbyte - 
 */
 
 import (
@@ -429,6 +432,7 @@ func RWArrFilesSortStr(globPat string, fnameOut string) {
 
 
 func RWArrFilesSortBA(globPat string, fnameOut string) {
+	LF := byte(12)
 	fout, foerr := os.OpenFile(fnameOut, os.O_TRUNC|os.O_CREATE|os.O_WRONLY, 0644)
 	if foerr != nil {
 		log.Fatalf("failed creating file %s: %s", fnameOut, foerr)
@@ -513,7 +517,7 @@ func RWArrFilesSortBA(globPat string, fnameOut string) {
 		// Based on the Lowest Identified Write that string 
 		// to disk
 		datawriter.Write(lowest)
-		datawriter.WriteString("\n")
+		datawriter.WriteByte(LF)
 		if files[lowestNdx] == nil {
 			// no more to read from this file
 			lines[lowestNdx] = nil
@@ -566,6 +570,8 @@ func main() {
 		RWArrFilesStr("../data/index/*.seg", foutName)
 	} else if action == "rwmanysort" {
 		RWArrFilesSortStr("../data/index/*.seg", foutName)
+	} else if action == "rwmanysortbyte" {
+		RWArrFilesSortBA("../data/index/*.seg", foutName)
 	} else if action == "basic"{
 		readTest(fnameIn)
 	}
