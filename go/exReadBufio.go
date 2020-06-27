@@ -61,7 +61,7 @@ import (
 	"os"
 	"bufio"
 	"path/filepath"
-	//"bytes"
+	"bytes"
 )
 
 func procLine(line string) {
@@ -313,7 +313,7 @@ func RWArrFilesByte(globPat string, fnameOut string) {
 
 
 
-func RWArrFilesSort(globPat string, fnameOut string) {
+func RWArrFilesSortStr(globPat string, fnameOut string) {
 	fout, foerr := os.OpenFile(fnameOut, os.O_TRUNC|os.O_CREATE|os.O_WRONLY, 0644)
 	if foerr != nil {
 		log.Fatalf("failed creating file %s: %s", fnameOut, foerr)
@@ -428,6 +428,124 @@ func RWArrFilesSort(globPat string, fnameOut string) {
 }
 
 
+func RWArrFilesSortBA(globPat string, fnameOut string) {
+	fout, foerr := os.OpenFile(fnameOut, os.O_TRUNC|os.O_CREATE|os.O_WRONLY, 0644)
+	if foerr != nil {
+		log.Fatalf("failed creating file %s: %s", fnameOut, foerr)
+	}
+	datawriter := bufio.NewWriter(fout)
+	defer fout.Close()
+	
+	fnames, _ := filepath.Glob(globPat)
+	if fnames == nil { 
+		fmt.Println("L322 Found no files for globPat=", globPat)
+	}
+	numFile := len(fnames)
+	fmt.Println("L132: initial fileList len=", numFile," files=", fnames)
+	files := make([]*os.File, numFile)
+	scanners := make([]*bufio.Scanner, numFile)
+	lines := make([][]byte, numFile)
+	// initialize line buffers so we do not need to re-allocate
+	for ndx:=0; ndx < numFile; ndx++ {
+		lines[ndx] = make([]byte,6400)
+	}
+	//lines = make([]string, numFile)
+	// Open our Array of Files 
+	for ndx:= 0; ndx < numFile; ndx++ {
+		fiPtr, err := os.Open(fnames[ndx])
+		if err != nil {
+			log.Fatalf("failed opening file %s: %s", fnames[ndx], err)
+			return
+		}
+		defer fiPtr.Close()
+		files[ndx] = fiPtr
+		scanner := bufio.NewScanner(fiPtr)
+		scanners[ndx] = scanner
+	}
+	fmt.Println("L144: All files open")
+	bytesRead := 0
+	linesRead := 0
+	
+	// Read a starter line from every file
+	for ndx:= 0; ndx < numFile; ndx++ {
+	 	if scanners[ndx] == nil {
+			// this file has reached EOF so skip
+			fmt.Println("L155: Skip file closed")
+			lines[ndx] = nil
+			continue
+		}
+		more := scanners[ndx].Scan()
+		str1 := scanners[ndx].Bytes()
+		blen := len(str1)
+		bytesRead += blen
+		linesRead += 1
+		tline := lines[ndx]
+		tline = tline[:0] // truncate current contents
+		tline = append(tline, str1...)
+		lines[ndx] = tline
+		if more == false {
+			files[ndx]=nil
+			scanners[ndx]=nil
+		}
+	}
+	
+	
+	for {
+		//fmt.Println("Outer Loop linesRead=", linesRead)
+		lowest := lines[0]
+		lowestNdx := 0
+		// Find the file with the lowest sort sequence
+		for ndx:=0; ndx < numFile; ndx++ {
+			if lowest == nil {
+				lowest = lines[ndx];
+				lowestNdx = ndx;
+			} else if bytes.Compare(lowest, lines[ndx]) > 0 {
+				lowest = lines[ndx];
+				lowestNdx = ndx;
+			}
+		}
+		if lowest == nil {
+			// last line for all files must be nil which indicates
+			// EOF has been reached for all files
+			break;
+		}
+		
+		// Based on the Lowest Identified Write that string 
+		// to disk
+		datawriter.Write(lowest)
+		datawriter.WriteString("\n")
+		if files[lowestNdx] == nil {
+			// no more to read from this file
+			lines[lowestNdx] = nil
+			continue;
+		} 
+		
+		if files[lowestNdx] == nil {
+			lines[lowestNdx] = nil
+		}
+		more := scanners[lowestNdx].Scan()
+		str1 := scanners[lowestNdx].Bytes()
+		if more == false {
+			files[lowestNdx]=nil
+			scanners[lowestNdx]=nil
+		}
+		
+		copy(lines[lowestNdx], str1) 
+		tline := lines[lowestNdx]
+		tline = tline[:0] // clear buffer keep the storage
+		tline = append(tline, str1...) // copy from temp buffer which may get destroyed after next read
+		lines[lowestNdx] = tline
+		
+		blen := len(str1)
+		bytesRead += blen
+		linesRead += 1
+	}
+	fmt.Println("L167: bytesRead=", bytesRead, " linesRead=", linesRead)
+}
+
+
+
+
 func main() {
 	fnameIn := os.Args[1]
 	action  := os.Args[2] 
@@ -447,7 +565,7 @@ func main() {
 	} else if action == "rwmanystr" {
 		RWArrFilesStr("../data/index/*.seg", foutName)
 	} else if action == "rwmanysort" {
-		RWArrFilesSort("../data/index/*.seg", foutName)
+		RWArrFilesSortStr("../data/index/*.seg", foutName)
 	} else if action == "basic"{
 		readTest(fnameIn)
 	}
