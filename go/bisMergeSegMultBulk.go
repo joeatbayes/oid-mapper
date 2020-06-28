@@ -57,6 +57,7 @@ type SortLines struct {
 	countLock  sync.Mutex
 	maxThread  int
 	targFilesPerThread int
+	activeThreads int
 }
 
 const MaxOpenFiles = 400
@@ -214,10 +215,10 @@ func  (sln *SortLines) mergeFileSet(mreq mergeSpec) {
 	fout.Close()
 	// Cleanup and update our status in larger queue
 	for ndx := 0; ndx < len(fnames); ndx ++ {
+		fmt.Println("L218: Cleanup remove ", fnames[ndx])
 		files[ndx].Close()
-		sln.removeTempFile(fnames[ndx])	
-		sln.wgDone.Done() 
-		
+		sln.removeTempFile(fnames[ndx])
+		sln.wgDone.Done()
 	}
 	
 	// Update Status of greater SLN merge so it knows
@@ -226,20 +227,28 @@ func  (sln *SortLines) mergeFileSet(mreq mergeSpec) {
 	sln.fiList <- mreq.fnameOut // Add output file to be re-processed
 	sln.countLock.Lock()
 	sln.pendCnt -= numFile
+	sln.activeThreads --
 	sln.countLock.Unlock()
 	fmt.Println("L230: finished mergeSet pendCnt=", sln.pendCnt, " len sln.fiList=", len(sln.fiList), " wrkListLen=", len(sln.workList), " fnameout=", mreq.fnameOut)
 	sln.wgWorkerReq.Done()
 }
 
 
-
+var emptyMergeReq mergeSpec
 // My worker thread loops looking for work
 // until the channel is closed
 func (sln *SortLines) fpWorkThread() {
 	for {
 		mreq, more := <-sln.workList // dequeue
+		if len(mreq.fnames) == 0 {
+			// channel has been closed
+			break;
+		}
 		sln.wgWorkerReq.Add(1)
-		fmt.Println("L243: Worker pendCnt=", sln.pendCnt, " mreq=", mreq, " more=", more)
+		sln.countLock.Lock()
+		sln.activeThreads ++
+		sln.countLock.Unlock()
+		fmt.Println("L243: Worker pendCnt=", sln.pendCnt, " sln.activeThreads=", sln.activeThreads, " mreq=", mreq, " more=", more)
 		sln.mergeFileSet(mreq)
 		if more == false {
 			break
@@ -270,6 +279,7 @@ func (sln *SortLines) mergFilesList() string {
 
 	// Load the sln.workList Queue with items to work on.
 	waitCnt := 0
+	nextBatchList := make([]string,0)
 	batchList := make([]string,0)
 	for sln.pendCnt > 1 {
 		fmt.Println("L275: pendCnt=", sln.pendCnt, "len batchList=", len(batchList), " lenWorkList=", len(sln.workList), " lenFiList=", len(sln.fiList))
@@ -277,7 +287,7 @@ func (sln *SortLines) mergFilesList() string {
 			// May be waiting for an existing merge to be completed
 			// so a file could still show up to be merged.  
 			waitCnt++
-			fmt.Println("L280:merge thread waitCnt=", waitCnt,  " pendCnt=", sln.pendCnt, " lenWrkList=", len(sln.workList))
+			fmt.Println("L280:merge thread waitCnt=", waitCnt,  " pendCnt=", sln.pendCnt, " sln.activeThreads=", sln.activeThreads, " lenWrkList=", len(sln.workList))
 			time.Sleep(time.Second)
 			continue;
 		}
@@ -286,17 +296,26 @@ func (sln *SortLines) mergFilesList() string {
 		
 		fname, _ := <-sln.fiList // Get next file to be processed.
 		
-		// TODO: Special Case Allow merge if 
-		// prior set if the size of the file read is more than 
-		// X larger than the last file added to the working set. 
-		// It is faster to merge the smaller files first
-		// then merge a smaller number of larger files to minimize
-		// compare overhead. This is overrulled if when the file
-		// is small enough even though it is larger because it will
-		// still be faster than possibly running an extra phase. 
-		// As the files get larger this rule becomes critical
-		// to preserve performance.
-		if fname != "" { 
+		// Special Case Allow merge if prior set if the size of the file read is
+		// more than X larger than the last file added to the working set. It is
+		// faster to merge the smaller files first then merge a smaller number 
+		// of larger files to minimize compare overhead. This is overrulled if
+		// when the fileis small enough even though it is larger because it will
+		// still be faster than possibly running an extra phase. As the files
+		// get larger this rule becomes critical to preserve performance.
+		if len(batchList) > 1 {
+			fsize := fileSize(fname)
+			fsizeLast := fileSize(batchList[len(batchList)-1])
+			// Add logic to skip special case if we could finish
+			// in this pass. 
+			if fsize > int64(float64(fsizeLast) * 1.95) {
+				doMerge = true
+				nextBatchList = append(nextBatchList, fname)
+				fname = "~SKIP" // ignore this file for this bath step
+			}
+		}
+		
+		if fname > "" && fname != "~SKIP" { 
 			batchList = append(batchList, fname)
 		}
 		
@@ -325,7 +344,8 @@ func (sln *SortLines) mergFilesList() string {
 			workReq := mergeSpec{fnames: batchList, fnameOut: foutName}
 			sln.workList <- workReq // enqueu
 			fmt.Println("L327: Queued=", sln.pendCnt, " lenFiList=", len(sln.fiList), " lenWorkList=", len(sln.workList), " workReq=", workReq)
-			batchList = make([]string,0)
+			batchList =  nextBatchList
+			nextBatchList = make([]string,0)
 		}
 		if fname == "" { break} // empty string means channel close to no more work could arrive.
 	} // main merge loop
@@ -345,7 +365,7 @@ func (sln *SortLines) mergFilesList() string {
 }
 
 func main() {
-	portCoreToUse := 1.3
+	portCoreToUse := 1.7
 	numMergeThreads := int(float64(runtime.NumCPU()) * portCoreToUse)  // reset starting default for current machine config
 	// May need to reduce maxThreads to avoid
 	// exceeding machine ulimits for files open
@@ -396,7 +416,13 @@ func main() {
 	// If we have more than we can reasonably merge in a single pass without
 	// compare overhead getting too high we want to spread the work across
 	// as many cores as possible since they can all run simutaneously. 
-	maxFilesPerThead := 20
+	maxFilesPerThead := 7 
+		// Tuned so when in early process with lots of segments to 
+		// to merge, we hit Max Read speed from SATA SSD when CPU is at
+		// 85%.   When CPU are faster or we have more cores relative to
+		// drive speed then we can increase this number to reduce passes
+		// when we have faster drives relative to avaialble cores then
+		// reduce this number. 
 	minFilesPerThread := 4
 	filesPerThread := (numFi / numMergeThreads) + 1
 	if filesPerThread > maxFilesPerThead {
@@ -425,11 +451,11 @@ func main() {
 		sln.wgDone.Add(1)
 		sln.pendCnt++
 	}
-	filesWritten := sln.mergFilesList()
-	fmt.Println("L283: filesWritten=", filesWritten)
+	lastFile := sln.mergFilesList()
+	fmt.Println("L283: lastFile=", lastFile)
 	fmt.Println("L284: finished waiting on threads start next phase")
-	fmt.Println("L285: Renaming ", fileList[0], " to ", fOutName)
-	err := os.Rename(fileList[0], fOutName)
+	fmt.Println("L285: Renaming ", lastFile, " to ", fOutName)
+	err := os.Rename(lastFile, fOutName)
 	if err != nil {
 		fmt.Println(" Error renaming file segment from ", fileList[0], " to ", fOutName, " err=", err)
 	}
