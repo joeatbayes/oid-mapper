@@ -405,7 +405,7 @@ func RWArrFilesSortStr(globPat string, fnameOut string) {
 		lowest := lines[0]
 		lowestNdx := 0
 		// Find the file with the lowest sort sequence
-		for ndx:=0; ndx < (numFile/15); ndx++ {			
+		for ndx:=0; ndx < (numFile); ndx++ {			
 			if lines[ndx] == "~" {
 				// Clear files so we can skip them
 				files[ndx] = nil
