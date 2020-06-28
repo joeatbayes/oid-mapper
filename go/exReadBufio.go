@@ -49,12 +49,36 @@ package main
 	   445MiB/s with drops lower.   Consuming 119% of 1 core
 	   
 	rwmanysort -  - source on sata ssd, write to same 
-	   claims to be writing about 600MiB/s but fluctuating
+	   claims to be writing about 40MiB/s but fluctuating
 	   a lot. CPU utilization is averagng about 82%
-	   uses string maniuplation took 33m2s
+	   uses string maniuplation took 33m2s/  
+	   Drops to 31m20s when read from sata ssd write
+	   to nvme.
 	   
-	rwmanysortbyte - 
-	rwmanysortbyte - 
+	rwmanysortbyte - 39m42s when reading from SATA SSD writing to same Sata SSD
+	               - 39m6s when reading from SADA SSD writing to NVME SSD
+	
+	
+	Thoughts if the basic search takes so long when reading and writing from
+	disk.    from 3m30sec to 39m then it is roughly 10 X slower when
+	scanning all 300 files and showing a IO froughly 46MiB then if we 
+	where to reduce so we 1/10th the files to scan then what does it do 
+	to IOPS.  If the answer is that we loose 90% of the difference from
+	the scan then it may make sense to produce 10 files and then merge
+	them in a seocnd pass.   When # of files was / 30 then speed 
+	on disk jumped up to 278 MiBs and it took 11s.   When # files in
+	compare loop was / 10 then speed jumped to about 180MiBs
+	When dealing with 300 files dividing by 30 gives a compare
+	compare set of 10 files.  That would reduce us to 30 output
+	files.  When  / 10 it gives us a compare set of 30 files 
+	and would produce 10 output files.   If we split the differnce
+	and / 15 then it gives us compare set of 20 files and an
+	output 20 files for the second phase.  The important part of 
+	this is that we can run the the first phase parralell using
+	all the cores and then run the last merge using only a single
+	core.  When tested read sata SSD write to NVME with a 15 divider
+	we averaged 191MiB/s and tool 30.254s to produce a file 5.9
+	Gig long. 
 */
 
 import (
@@ -356,20 +380,18 @@ func RWArrFilesSortStr(globPat string, fnameOut string) {
 	
 	// Read a starter line from every file
 	for ndx:= 0; ndx < numFile; ndx++ {
-	 	if scanners[ndx] == nil {
+	 	if files[ndx] == nil {
 			// this file has reached EOF so skip
 			fmt.Println("L155: Skip file closed")
 			//lines[ndx] = nil
-			lines[ndx] = "~~"
+			lines[ndx] = "~"
 			continue
 		}
 		more := scanners[ndx].Scan()
-		//str1 := scanners[ndx].Bytes()
 		str1 := scanners[ndx].Text()
 		blen := len(str1)
 		bytesRead += blen
 		linesRead += 1
-		//copy(lines[ndx],str1)
 		lines[ndx] = str1
 		if more == false {
 			files[ndx]=nil
@@ -383,19 +405,29 @@ func RWArrFilesSortStr(globPat string, fnameOut string) {
 		lowest := lines[0]
 		lowestNdx := 0
 		// Find the file with the lowest sort sequence
-		for ndx:=0; ndx < numFile; ndx++ {
-			//if lowest == nil {
-			if lowest == "~~" {
-				lowest = lines[ndx];
-				lowestNdx = ndx;
-			//} else if bytes.Compare(lowest, lines[ndx]) > 0 {
-			} else if lowest > lines[ndx] {
-				lowest = lines[ndx];
-				lowestNdx = ndx;
+		for ndx:=0; ndx < (numFile/15); ndx++ {			
+			if lines[ndx] == "~" {
+				// Clear files so we can skip them
+				files[ndx] = nil
+				continue;
 			}
+			if lowest == "~" {
+				// Use this item no matter what since the
+				// prior one is no good.
+				lowest = lines[ndx];
+				lowestNdx = ndx;
+				continue
+			}
+			
+			if lowest > lines[ndx] {
+				// Set a new lowest fp
+				lowest = lines[ndx];
+				lowestNdx = ndx;
+				continue;
+			} 
 		}
-		//if lowest == nil {
-		if lowest == "~~" {
+		
+		if lowest == "~" {
 			// last line for all files must be nil which indicates
 			// EOF has been reached for all files
 			break;
@@ -403,25 +435,19 @@ func RWArrFilesSortStr(globPat string, fnameOut string) {
 		
 		// Based on the Lowest Identified Write that string 
 		// to disk
-		datawriter.WriteString(lowest)
-		datawriter.WriteString("\n")
+		datawriter.WriteString(lowest + "\n")
 		if files[lowestNdx] == nil {
 			// no more to read from this file
-			lines[lowestNdx] = "~~"
+			lines[lowestNdx] = "~"
 			continue;
 		} 
 		
-		if files[lowestNdx] == nil {
-			lines[lowestNdx] = "~~"
-		}
 		more := scanners[lowestNdx].Scan()
-		//str1 := scanners[lowestNdx].Bytes()
 		str1 := scanners[lowestNdx].Text()
 		if more == false {
 			files[lowestNdx]=nil
 			scanners[lowestNdx]=nil
 		}
-		//copy(lines[lowestNdx], str1) // copy from temp buffer which may get destroyed after next read
 		lines[lowestNdx] = str1
 		blen := len(str1)
 		bytesRead += blen
@@ -553,8 +579,8 @@ func RWArrFilesSortBA(globPat string, fnameOut string) {
 func main() {
 	fnameIn := os.Args[1]
 	action  := os.Args[2] 
-	foutName := "t.t99" // sata ssd
-	//foutName := "/home/jwork/index/t.t99" // nvme
+	//foutName := "t.t99" // sata ssd
+	foutName := "/home/jwork/index/t.t99" // nvme
 	
 	fmt.Println("fnameIn=", fnameIn, " action=", action)
 	
