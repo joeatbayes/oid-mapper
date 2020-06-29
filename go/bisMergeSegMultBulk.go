@@ -17,7 +17,9 @@ import (
 
 /* Merge pre-sorted input files into a sorted output file.  Attempt to
 see if using GoLang we can devise a method that equals or beats
-the performance of the linux sort. For 100GB size range files. 
+the performance of the linux sort. For 100GB size range files. When the
+file size is too large to allow sort to use ramdisk /tmp and when we 
+have multiple cores. 
 
 The sorted files are needed to use technique is based roughly
 on the bisect file pattern which is essentially a binary search
@@ -365,7 +367,7 @@ func (sln *SortLines) mergFilesList() string {
 }
 
 func main() {
-	portCoreToUse := 1.7
+	portCoreToUse := 1.25
 	numMergeThreads := int(float64(runtime.NumCPU()) * portCoreToUse)  // reset starting default for current machine config
 	// May need to reduce maxThreads to avoid
 	// exceeding machine ulimits for files open
@@ -416,7 +418,7 @@ func main() {
 	// If we have more than we can reasonably merge in a single pass without
 	// compare overhead getting too high we want to spread the work across
 	// as many cores as possible since they can all run simutaneously. 
-	maxFilesPerThead := 7 
+	maxFilesPerThead := 25
 		// Tuned so when in early process with lots of segments to 
 		// to merge, we hit Max Read speed from SATA SSD when CPU is at
 		// 85%.   When CPU are faster or we have more cores relative to

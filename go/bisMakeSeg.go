@@ -78,15 +78,15 @@ func bToMb(b uint64) uint64 {
 }
 
 func main() {
-	fractOfCPUUsage := 0.8
+	fractOfCPUUsage := 1.3
 	numThread := int(float64(runtime.NumCPU()) * fractOfCPUUsage)
 	if numThread < 2 { numThread = 2 }
 	fmt.Println("selected max thread=", numThread)
-	maxElePerBlock := 4000000 // 5000000
-	maxBytesPerBlock := 450000000 // 450000000
+	maxElePerBlock := 3000000 // 5000000
+	maxBytesPerBlock := 350000000 // 450000000
 	var wg sync.WaitGroup
 	wg.Add(numThread)
-	blocks := make(chan BlockDesc, numThread+5)
+	blocks := make(chan BlockDesc, numThread+1)
 	fmt.Println("os.Args=", os.Args)
 	if len(os.Args) < 3 {
 		fmt.Println("Arg 1 must be input file name and arg2 must be output base name")
