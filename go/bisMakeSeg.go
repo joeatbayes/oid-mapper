@@ -19,7 +19,14 @@ to allow access using binary search techniques.   This technique
 is based roughly on the bisect file pattern used in my DEM water
 flow array ported from python to go.  Some ideas borrowed from
 bibliographic indexing along with rway merge. Seeing if go
-can come close to the native linux sort. */
+can come close to the native linux sort. 
+
+The line parser turned out to be a source of load that 
+was limiting the rate at which we could feed the worker
+tasks so so moved that function to the sort threads 
+so we could spread it acorss multiple-cpu.
+
+*/
 
 type BlockDesc struct {
   segCnt int
@@ -31,9 +38,9 @@ type BlockDesc struct {
 //------------------
 //--- Process Input Files
 //------------------
-func saveBlock(bdesc BlockDesc) {
+func saveBlock(bdesc *BlockDesc) {
 	fiName := bdesc.baseFiName + "." + fmt.Sprintf("%05d",bdesc.segCnt) + "-000.seg"
-	file, err := os.OpenFile(fiName, os.O_CREATE|os.O_WRONLY, 0644)
+	file, err := os.OpenFile(fiName, os.O_TRUNC|os.O_CREATE|os.O_WRONLY, 0644)
     if err != nil {
 		  log.Fatalf("failed creating file %s: %s", fiName, err)
 	}
@@ -44,20 +51,42 @@ func saveBlock(bdesc BlockDesc) {
 	  _, _ = datawriter.WriteString(bdesc.lines[i] + "\n")
 	}
 	datawriter.Flush()
-	PrintMemUsage()
+	//PrintMemUsage()
 }
 
-func procBlock(chanIn chan BlockDesc, wg *sync.WaitGroup) {
+func procBlock(chanIn chan *BlockDesc, wg *sync.WaitGroup) {
 	for {
 	    bdesc,more := <- chanIn
+		if bdesc == nil {
+			break // Channel has been closed
+		}
 		fmt.Println("proc Block rec lines segCnt=", bdesc.segCnt, " numLines=", len(bdesc.lines))
+		numLine := len(bdesc.lines)
+		// Perform string / line conversion in worker thread
+		// to minimize load in block loader
+		var lflds [4] string
+		for ndx:=0; ndx < numLine; ndx++ {
+			larr := strings.Split(bdesc.lines[ndx], ",")
+			//fmt.Println("larr=", larr)
+			if len(larr) != 4  {
+				bdesc.lines[ndx] = "~ERROR" + bdesc.lines[ndx]
+				continue
+			} else {
+				lflds[0] = larr[3]
+				lflds[1] = larr[1]
+				lflds[2] = larr[2]
+				lflds[3] = larr[0]
+				//fmt.Println("lfds=", lflds)
+				bdesc.lines[ndx] = strings.Join(lflds[:], ",")
+			}
+		}
 		sort.Strings(bdesc.lines)
-		saveBlock(bdesc)		
+		saveBlock(bdesc)
 		if (more) { 
 			fmt.Println("proc Block more")
 		} else {
 			fmt.Println("proc Block no more")
-			break;
+			break
 		}
 	}
 	wg.Done()
@@ -78,15 +107,24 @@ func bToMb(b uint64) uint64 {
 }
 
 func main() {
-	fractOfCPUUsage := 1.3
+	fractOfCPUUsage := 1.4
 	numThread := int(float64(runtime.NumCPU()) * fractOfCPUUsage)
 	if numThread < 2 { numThread = 2 }
 	fmt.Println("selected max thread=", numThread)
-	maxElePerBlock := 3000000 // 5000000
-	maxBytesPerBlock := 350000000 // 450000000
+	var m runtime.MemStats
+    runtime.ReadMemStats(&m)
+	systemBytes := m.Sys * 1024
+	expectedBytesPerLineAvg := 130
+	portOfRamToUse := 0.070
+	maxBytesPerBlock := int((float64(systemBytes) / float64(numThread +2)) * float64(portOfRamToUse))
+	maxElePerBlock := maxBytesPerBlock / expectedBytesPerLineAvg
+	numBlockDesc := 2
+	if numBlockDesc < 1 {
+		numBlockDesc = 1
+	}
 	var wg sync.WaitGroup
 	wg.Add(numThread)
-	blocks := make(chan BlockDesc, numThread+1)
+	blocks := make(chan *BlockDesc, numBlockDesc)
 	fmt.Println("os.Args=", os.Args)
 	if len(os.Args) < 3 {
 		fmt.Println("Arg 1 must be input file name and arg2 must be output base name")
@@ -115,31 +153,28 @@ func main() {
 	header :=  scanner.Text()
 	fmt.Println("header=", header)
 	txtlines := make([]string, maxElePerBlock+1)
-	var lflds [4] string
+	
 	rowNdx := 0
 	buffBytes := 0
 	segCnt := 0
 	lineCnt := 0
-	for scanner.Scan() {		
+	// TODO:  This thread seems to be blocking the feed
+	//  for other threads.  Consider moving work out 
+	//  allowing multiple readers on separate threads
+	// 
+	for scanner.Scan() {
 		aline = scanner.Text()
 		if aline > " " {
 			lineCnt += 1
-			larr := strings.Split(aline, ",")
-			//fmt.Println("larr=", larr)
-			if len(larr) == 4  {
-			  lflds[0] = larr[3]
-			  lflds[1] = larr[1]
-			  lflds[2] = larr[2]
-			  lflds[3] = larr[0]
-			  //fmt.Println("lfds=", lflds)
-			  outStr := strings.Join(lflds[:], ",")
-			  txtlines[rowNdx] = outStr
+			
+			txtlines[rowNdx] = aline
 			  rowNdx += 1
-			  buffBytes += len(outStr)
+			//  buffBytes += len(outStr)
+			  buffBytes += len(aline)
 			  if buffBytes >= maxBytesPerBlock || rowNdx >= maxElePerBlock {
 				  // Flush our full buffer
 				  fmt.Println("Buffer line#", lineCnt)
-				  blocks <- BlockDesc{segCnt, fOutName, txtlines[:rowNdx]}
+				  blocks <- &BlockDesc{segCnt, fOutName, txtlines[:rowNdx]}
 				  // make a new buffer to contain the next chunk
 				  // so we can fill it while other threads work
 				  // on sorting
@@ -147,15 +182,14 @@ func main() {
 				  rowNdx = 0
 				  buffBytes = 0
 				  segCnt += 1
-			  }
+			 // }
 			}
 		}
 	}
 	// flush the last buffer full
 	if rowNdx > 0  {
-		blocks <- BlockDesc{segCnt, "testseg", txtlines[:rowNdx]}
+		blocks <- &BlockDesc{segCnt, "testseg", txtlines[:rowNdx]}
 	}
- 
 	file.Close()
 	close(blocks)
 	fmt.Println("Waiting for threads to finish")
